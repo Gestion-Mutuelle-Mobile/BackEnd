@@ -1,6 +1,6 @@
-# KNICKS LINK
+# BACKEND MUTUELLE
 
-This project is a basic social media clone developed using Django framework. It includes various social media features.
+Project Of SMA
 
 
 ## Tech Stack
