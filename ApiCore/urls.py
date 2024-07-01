@@ -7,6 +7,7 @@ from django.conf.urls.static  import static
 
 urlpatterns = [
     path('', include('accounts.urls')),
+    path('', include('api.urls')),
     path('', include('members.urls')),
     path('', include('users.urls')),
     path('', include('borrowing_savings.urls')),
