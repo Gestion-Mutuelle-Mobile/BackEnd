@@ -1,10 +1,8 @@
 from rest_framework import serializers
-from .models import Session
-
-class SessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Session
-        fields = '__all__'
+from sessions_.models import Session
+from obligatory_contributions.models import Obligatory_Contribution
+from helps.models import Help
+from savings.models import Saving
 
 class FondSocialSerializer(serializers.Serializer):
     exercice_id = serializers.IntegerField()
