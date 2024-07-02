@@ -68,3 +68,4 @@ class UpdateProfileAPI(generics.UpdateAPIView):
     permissions.IsAuthenticated,
     ]
     serializer_class = UpdateUserSerializer
+  
