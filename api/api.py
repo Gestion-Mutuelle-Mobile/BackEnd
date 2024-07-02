@@ -64,3 +64,22 @@ class ActiveSessionViewSet(viewsets.ViewSet):
                 return Response({'session_state':"off"})
         except Exception as e:
             return Response({'error': f'Erreur lors du calcul de la trésorerie : {e}'})
+        
+
+class CloseSessionViewSet(viewsets.ViewSet):
+    permission_classes = [permissions.AllowAny]
+
+    def list(self, request):
+        try:
+            # Récupérer la session active
+            active_session = Session.objects.filter(active=1).first()
+
+            if active_session:
+                active_session.active = 0
+                active_session.save()
+                return Response({'session_state': "off"})
+            else:
+                return Response({'error': 'Aucune session active trouvée.'}, status=404)
+
+        except Exception as e:
+            return Response({'error': f'Erreur lors de la fermeture de la session : {e}'}, status=500)
