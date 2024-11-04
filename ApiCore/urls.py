@@ -6,6 +6,7 @@ from django.conf.urls.static  import static
 
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
     path('', include('api.urls')),
     path('', include('members.urls')),
@@ -23,6 +24,7 @@ urlpatterns = [
     path('', include('administrators.urls')),
     path('', include('obligatory_contributions.urls')),
     path('', include('ask_Borrowings_Helps.urls')),
+    
 
 ]
 

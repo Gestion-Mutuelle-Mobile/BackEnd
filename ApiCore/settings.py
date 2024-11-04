@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-p=ul_p40pwem=6))lr^19zzwge70w2v=ue1@n2a#4gj@wp9er2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*','192.168.43.220','192.168.157.104','192.168.164.104']
+ALLOWED_HOSTS = ['*','192.168.43.220','192.168.157.104','192.168.164.104','192.168.100.208',"127.0.0.1"]
 AUTH_USER_MODEL = 'users.User'
 
 
