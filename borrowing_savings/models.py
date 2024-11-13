@@ -1,5 +1,4 @@
 from django.db import models
-from borrowings.models import Borrowing
 from savings.models import Saving
 
 # Create your models here.

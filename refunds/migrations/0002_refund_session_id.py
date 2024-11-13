@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='refund',
             name='session_id',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sessions_.session'),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='mutualApp.Session'),
         ),
     ]
