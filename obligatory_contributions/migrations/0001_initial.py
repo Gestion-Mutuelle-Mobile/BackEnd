@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('create_at', models.DateTimeField(auto_now_add=True)),
                 ('administrator_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='administrators.administrator')),
                 ('member_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='members.member')),
-                ('session_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='sessions_.session')),
+                ('session_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='mutualApp.Session')),
             ],
         ),
     ]

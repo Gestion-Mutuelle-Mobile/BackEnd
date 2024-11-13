@@ -59,6 +59,8 @@ INSTALLED_APPS = [
     'configs',
     'obligatory_contributions',
     'ask_Borrowings_Helps',
+    'mutualApp',
+    'operationApp',
     
 ]
 

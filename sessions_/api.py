@@ -1,5 +1,5 @@
 from requests import Response
-from sessions_.models import Session
+from mutualApp.models import Session
 from rest_framework import viewsets, permissions
 from .serializers import SessionSerializer
 

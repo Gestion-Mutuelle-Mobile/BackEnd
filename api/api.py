@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from sessions_.models import Session
+from mutualApp.models import Session
 from obligatory_contributions.models import Obligatory_Contribution
 from helps.models import Help
 from savings.models import Saving
