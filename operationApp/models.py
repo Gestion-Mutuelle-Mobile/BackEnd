@@ -73,7 +73,7 @@ class Borrowing(Operation):
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     payment_date_line = models.DateTimeField(blank=True, null=True)
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE)
+    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='borrowings_from_operation')
     state = models.BooleanField(default=False)  # False = non remboursé, True = remboursé
 
     def save(self, *args, **kwargs):
@@ -97,7 +97,7 @@ class Borrowing(Operation):
 # model de l'epargne
 class Epargne(Operation):
     # id = models.IntegerField(max_length=10)
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE)
+    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='epargne_from_operation')
     amount = models.IntegerField()
 
     def save(self, *args, **kwargs):
@@ -124,11 +124,14 @@ class Epargne(Operation):
 
 # model du remboursement
 class Refund(models.Model):
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE,
+                                         related_name='refunds_from_operation')
+    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, default=1,
+                                  related_name='refunds_from_operation')
+    borrowing_id = models.ForeignKey('operationApp.Borrowing', on_delete=models.CASCADE, null=True,
+                                     related_name='refunds_from_operation')
+    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE, related_name='refunds_from_operation')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE)
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, default=1)
-    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE)
-    borrowing_id = models.ForeignKey('operationApp.Borrowing', on_delete=models.CASCADE, null=True)
     create_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
