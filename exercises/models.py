@@ -1,6 +1,6 @@
 from django.db import models
 from administrators.models import Administrator
-from mutualApp.models import Operation
+# from mutualApp.models import Operation
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone

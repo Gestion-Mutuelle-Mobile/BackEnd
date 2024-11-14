@@ -9,14 +9,13 @@ from members.models import Member
 
 # Create your models here.
 
-class Operation(models.Model):
-    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL)
-    create_at = models.DateTimeField(auto_now=True)
 
 
 # Create your models here.
-class Exercise(Operation):
+class Exercise(models.Model):
     active = models.BooleanField(default=True)
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
+    create_at = models.DateTimeField(auto_now=True)
     def update_active(self):
         """
         Met à jour le champ 'active' à False si l'exercice a été créé il y a plus d'un an.
@@ -30,9 +29,10 @@ class Exercise(Operation):
     def __str__(self):
         return str(f"Exercice {self.id} de {self.create_at}")
 
-class Session(Operation):
+class Session(models.Model):
     exercise_id = models.ForeignKey('mutualApp.Exercise', on_delete=models.CASCADE)
     state = models.CharField(max_length=255, default='SAVING')
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
     active = models.BooleanField(default=True)
     def update_active(self):
         """

@@ -1,8 +1,7 @@
-from contributions.models import Contribution
+from operationApp.models import PersonalContribution
 from rest_framework import viewsets, permissions
-from .serializers import ContributionSerializer
-
+from operationApp.serializers import  PersonalContributionSerializer
 class ContributionViewSet(viewsets.ModelViewSet):
-    queryset = Contribution.objects.all()
+    queryset = PersonalContribution.objects.all()
     permission_classes = [permissions.AllowAny]
-    serializer_class = ContributionSerializer
+    serializer_class = PersonalContributionSerializer
