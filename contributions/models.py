@@ -1,9 +1,9 @@
 from django.db import models
 from members.models import Member
-from helps.models import Help
+from operationApp.models import Help
 from administrators.models import Administrator
 # Create your models here.
-class Contribution(models.Model):
+class PersonalContribution(models.Model):
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE)
     date = models.CharField(max_length=20)
     state = models.IntegerField(default=1)

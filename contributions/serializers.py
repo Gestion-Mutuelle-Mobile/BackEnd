@@ -1,7 +1,7 @@
-from rest_framework import serializers
-from .models import Contribution
-
-class ContributionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Contribution
-        fields = '__all__'
+# from rest_framework import serializers
+# from .models import PersonalContribution
+#
+# class ContributionSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = PersonalContribution
+#         fields = '__all__'

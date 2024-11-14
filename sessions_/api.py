@@ -1,7 +1,7 @@
 from requests import Response
 from mutualApp.models import Session
 from rest_framework import viewsets, permissions
-from .serializers import SessionSerializer
+from mutualApp.serializers import SessionSerializer
 
 class SessionViewSet(viewsets.ModelViewSet):
     queryset = Session.objects.all()

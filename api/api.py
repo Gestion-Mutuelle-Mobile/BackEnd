@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from mutualApp.models import Session
 from obligatory_contributions.models import Obligatory_Contribution
-from helps.models import Help
+from operationApp.models import Help
 from savings.models import Saving
 from members.models import Member  # Importer Member ici
 from configs.models import Config

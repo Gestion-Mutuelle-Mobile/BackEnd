@@ -1,6 +1,6 @@
-from helps.models import Help
+from operationApp.models import Help
 from rest_framework import viewsets, permissions
-from .serializers import HelpSerializer
+from operationApp.serializers import HelpSerializer
 
 class HelpViewSet(viewsets.ModelViewSet):
     queryset = Help.objects.all()

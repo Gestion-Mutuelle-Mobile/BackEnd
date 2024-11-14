@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'borrowing_savings',
     'borrowings',
     'contributions',
-    'exercises',
+    # 'exercises',
     'help_types', 
     'helps',
     'members',
