@@ -1,5 +1,7 @@
+
 from requests import Response
 from rest_framework.decorators import action
+from rest_framework.utils import timezone
 
 from members.models import Member
 from rest_framework import viewsets, permissions
@@ -70,3 +72,107 @@ class UnpaidObligatoryContributionMembersViewSet(viewsets.ViewSet):
 
         serializer = MemberSerializer(unpaid_members, many=True)
         return Response(serializer.data)
+
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from users.models import User
+from django.contrib.auth.hashers import make_password
+from members.models import Member
+from administrators.models import Administrator
+from mutualApp.models import Session
+
+
+class RegisterUserView(APIView):
+    def post(self, request):
+        # Récupérer les données de la requête
+        data = request.data
+        name = data.get("name")
+        first_name = data.get("first_name")
+        sex = data.get("sex", "")
+        user_type = data.get("type", "member")
+        address = data.get("address", "")
+        tel = data.get("tel", "")
+        email = data.get("email")
+        password = data.get("password")
+
+        # Créer l'utilisateur avec les informations de base
+        user = User(
+            first_name=first_name,
+            name=name,
+            email=email,
+            password=make_password(password),  # Hash du mot de passe
+            sex=sex,
+            tel=tel,
+            address=address,
+            type=user_type,
+            create_at=timezone.datetime.now()
+
+        )
+        user.save()
+
+        # Vérifier le type d'utilisateur et créer l'objet associé
+        if user_type == "administrator":
+            # Création d'un administrateur
+            admin = Administrator.objects.create(
+                user_id=user,
+                username=name,
+                root=1  # Exemple de configuration pour le champ `root`
+            )
+            response_data = {
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "first_name": user.first_name,
+                    "email": user.email,
+                    "tel": tel,
+                    "address": address,
+                    "type": "administrator",
+                },
+                "administrator": {
+                    "id": admin.id,
+                    "username": admin.username,
+                    "root": admin.root,
+                    "user_id": admin.user_id.id
+                }
+            }
+
+        elif user_type == "member":
+            # Assigner un administrateur par défaut (id = 1) pour les membres simples
+            default_admin_id = 1
+            member = Member.objects.create(
+                user_id=user,
+                username=name,
+                social_crown=0,
+                administrator_id=Administrator.objects.get(id=default_admin_id)
+            )
+
+            response_data = {
+                "user": {
+                    "id": user.id,
+                    "name": user.name,
+                    "first_name": user.first_name,
+                    "email": user.email,
+                    "tel": tel,
+                    "address": address,
+                    "type": "member",
+                },
+                "member": {
+                    "id": member.id,
+                    "username": member.username,
+                    "active": member.active,
+                    "social_crown": member.social_crown,
+                    "inscription": member.inscription,
+                    "user_id": member.user_id.id,
+                    "administrator_id": member.administrator_id.id
+                }
+            }
+
+        else:
+            return Response({"error": "Type d'utilisateur non valide"}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(response_data, status=status.HTTP_201_CREATED)
+
+

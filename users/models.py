@@ -2,6 +2,8 @@ from django.db import models
 from django.contrib import auth
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils.translation import gettext_lazy as _
+from rest_framework.utils import timezone
+
 
 def upload_to(instance, filename):
     return 'posts/{filename}'.format(filename=filename)
@@ -39,8 +41,8 @@ class User(AbstractBaseUser):
     avatar = models.ImageField(_("Image"), upload_to=upload_to, default='posts/default.jpg')
     tel = models.CharField(max_length=9)
     address = models.CharField(max_length=50)
-    create_at = models.DateTimeField(auto_now_add=True)
-    
+    create_at = models.DateTimeField(auto_created=True,auto_now=True)
+
     is_staff = models.BooleanField(default=False)  # Ajout pour la gestion des permissions
     is_superuser = models.BooleanField(default=False)  # Ajout pour la gestion des permissions
 

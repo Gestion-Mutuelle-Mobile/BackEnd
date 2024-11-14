@@ -14,6 +14,25 @@ class Member(models.Model):
     inscription = models.IntegerField(default=10000)
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE)
 
+    def save(self, *args, **kwargs):
+        # Appeler le save parent pour enregistrer le membre
+        super().save(*args, **kwargs)
+
+        # Rechercher la session active la plus récente
+        from mutualApp.models import Session
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+
+        if session:
+            # Vérifier si un fonds social existe pour cette session
+            from mutualApp.models import FondSocial
+            fond_social, created = FondSocial.objects.get_or_create(session=session)
+
+            # Si le fonds social existe déjà, on le met à jour ; sinon, il est créé avec l'inscription du membre
+            if not created:
+                fond_social.update_fonds_social()
+            else:
+                # Initialiser le montant du fonds social avec l'inscription du membre
+                fond_social.update_fonds_social()
     def calculate_debt(self):
         """
         Calcule le montant total restant à rembourser par le membre.
