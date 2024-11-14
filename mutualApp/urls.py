@@ -16,4 +16,4 @@ urlpatterns = [
 ] + router.urls  # Ajoute les URLs générées par le router
 
 # Ajoute la gestion des formats (suffixes)
-urlpatterns = format_suffix_patterns(urlpatterns)
+# urlpatterns = format_suffix_patterns(urlpatterns)
