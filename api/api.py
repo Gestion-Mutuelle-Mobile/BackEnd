@@ -2,9 +2,9 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from mutualApp.models import Session
-from obligatory_contributions.models import Obligatory_Contribution
+from operationApp.models import ObligatoryContribution
 from operationApp.models import Help
-from savings.models import Saving
+from operationApp.models import Epargne
 from members.models import Member  # Importer Member ici
 from configs.models import Config
 
@@ -40,7 +40,7 @@ class TresorerieViewSet(viewsets.ViewSet):
         try:
             tresorerie = 0
             for session in Session.objects.all():
-                for saving in Saving.objects.filter(session_id=session):
+                for saving in Epargne.objects.filter(session_id=session):
                     tresorerie += saving.amount
 
             serializer = TresorerieSerializer(data={'tresorerie': tresorerie})

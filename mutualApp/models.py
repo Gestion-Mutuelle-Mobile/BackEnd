@@ -34,6 +34,18 @@ class Session(models.Model):
     state = models.CharField(max_length=255, default='SAVING')
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
     active = models.BooleanField(default=True)
+
+    def save(self, *args, **kwargs):
+        """
+        Avant de sauvegarder une nouvelle session, désactive la session active existante,
+        s'il y en a une, pour garantir qu'il n'y ait qu'une seule session active.
+        """
+        if self.active:
+            # Désactive toute autre session active
+            Session.objects.filter(active=True).update(active=False)
+
+        # Sauvegarde la nouvelle session
+        super().save(*args, **kwargs)
     def update_active(self):
         """
         Met à jour le champ 'active' à False si la session a été créé il y a plus d'un mois.
@@ -58,7 +70,7 @@ class FondSocial(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def update_fonds_social(self):
-        from obligatory_contributions.models import Obligatory_Contribution
+        from operationApp.models import ObligatoryContribution
 
         """
         Met à jour le fond social en ajoutant les montants des contributions
@@ -67,7 +79,7 @@ class FondSocial(models.Model):
         """
         # Contributions obligatoires depuis la dernière mise à jour
         self.updated_at = timezone.now()
-        new_contributions = Obligatory_Contribution.objects.filter(
+        new_contributions = ObligatoryContribution.objects.filter(
             session=self.session,
             created_at__gt=self.updated_at,
             member__active=True  # seulement les membres actifs

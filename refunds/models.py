@@ -1,5 +1,5 @@
 from django.db import models
-from borrowings.models import Borrowing
+from operationApp.models import Borrowing
 from members.models import Member
 from administrators.models import Administrator
 from mutualApp.models import Exercise
@@ -12,5 +12,5 @@ class Refund(models.Model):
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE)
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, default=1)
     session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE)
-    borrowing_id = models.ForeignKey('borrowings.Borrowing', on_delete=models.CASCADE,null=True)
+    borrowing_id = models.ForeignKey('operationApp.Borrowing', on_delete=models.CASCADE,null=True)
     create_at = models.DateTimeField(auto_now_add=True)

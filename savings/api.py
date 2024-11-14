@@ -1,8 +1,8 @@
-from savings.models import Saving
+from operationApp.models import Epargne
 from rest_framework import viewsets, permissions
-from .serializers import SavingSerializer
+from .serializers import EpargneSerializer
 
-class SavingViewSet(viewsets.ModelViewSet):
-    queryset = Saving.objects.all()
+class EpargneViewSet(viewsets.ModelViewSet):
+    queryset = Epargne.objects.all()
     permission_classes = [permissions.AllowAny]
-    serializer_class = SavingSerializer
+    serializer_class = EpargneSerializer
