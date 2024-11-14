@@ -81,15 +81,15 @@ class FondSocial(models.Model):
         self.updated_at = timezone.now()
         new_contributions = ObligatoryContribution.objects.filter(
             session=self.session,
-            created_at__gt=self.updated_at,
+            create_at__gt=self.updated_at,
             member__active=True  # seulement les membres actifs
         ).aggregate(total_amount=models.Sum('amount'))['total_amount'] or 0
 
         # Frais d'inscription des nouveaux membres actifs depuis la dernière mise à jour
         new_inscriptions = Member.objects.filter(
             active=1,
-            contribution__session=self.session,  # contributions dans la session en cours
-            contribution__created_at__gt=self.updated_at
+            # contribution__session=self.session,  # contributions dans la session en cours
+            create_at__gt=self.updated_at
         ).aggregate(total_inscription=models.Sum('inscription'))['total_inscription'] or 0
 
         # Mise à jour du montant du fond social
