@@ -1,6 +1,7 @@
 from django.contrib import admin
 
-from operationApp.models import Operation, Contribution, PersonalContribution, Help
+from operationApp.models import Operation, Contribution, PersonalContribution, Help, ObligatoryContribution, Borrowing, \
+    Epargne, Refund
 
 
 # Register your models here.
@@ -21,4 +22,24 @@ class PersonalContributionAdmin(admin.ModelAdmin):
 
 @admin.register(Help)
 class HelpAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ObligatoryContribution)
+class Obligatory_ContributionAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Borrowing)
+class BorrowingAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Epargne)
+class EpargneAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Refund)
+class RefundAdmin(admin.ModelAdmin):
     pass

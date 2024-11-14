@@ -8,7 +8,7 @@ from .serializers import MemberSerializer
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from obligatory_contributions.models import Obligatory_Contribution
+from operationApp.models import ObligatoryContribution
 from mutualApp.models import Session
 from .models import Member
 from .serializers import MemberSerializer
@@ -50,17 +50,23 @@ class MemberViewSet(viewsets.ModelViewSet):
 
 
 class UnpaidObligatoryContributionMembersViewSet(viewsets.ViewSet):
-    #permission_classes = [IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
     def list(self, request):
         """
-        Retourne la liste des membres qui n'ont pas encore payé leur contribution obligatoire pour toutes les sessions.
+        Retourne la liste des membres qui n'ont pas encore payé leur contribution obligatoire
+        pour la session active la plus récente.
         """
-        # Obtenir les membres qui n'ont pas encore payé leur contribution pour toutes les sessions
-        unpaid_members = Member.objects.filter(
-            obligatory_contribution__contributed=0
+        # Trouver la session active la plus récente
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+        if not session:
+            return Response({"error": "Aucune session active trouvée."}, status=404)
+
+        # Obtenir les membres sans contribution obligatoire pour cette session
+        unpaid_members = Member.objects.exclude(
+            obligatory_contribution__session=session,
+            obligatory_contribution__contributed=True
         ).distinct()
 
-        # Sérialiser les membres
         serializer = MemberSerializer(unpaid_members, many=True)
         return Response(serializer.data)

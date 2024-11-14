@@ -1,6 +1,8 @@
 from django.db import models
 from users.models import User
 from administrators.models import Administrator
+from decimal import Decimal
+from datetime import timedelta
 # Create your models here.
 class Member(models.Model):
     # id = models.IntegerField(max_length=10)
@@ -28,17 +30,38 @@ class Member(models.Model):
         """
         return self.help_set.filter(state=1).exists()
 
-    def calculate_savings(self):
+    def calculate_total_savings(self):
         """
-        Calcule le montant total de l'épargne du membre (somme des remboursements).
+        Calcule l'épargne totale du membre dans la session active la plus récente.
         """
-        total_savings = self.refund_set.aggregate(
-            savings=models.Sum('amount')
-        )['savings'] or 0
-        return total_savings
+        from mutualApp.models import Session
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+        if session:
+            from operationApp.models import Epargne
+            return Epargne.objects.filter(member_id=self, session=session).aggregate(
+                total_savings=models.Sum('amount')
+            )['total_savings'] or 0
+        return 0
+
+    def calculate_tresorerie_percentage(self):
+        """
+        Calcule le pourcentage de la treso que représente l'épargne totale
+        du membre pour la session active la plus récente.
+        """
+        from mutualApp.models import Session
+        from operationApp.models import Tresorerie
+
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+        if not session:
+            return Decimal(0)
+
+        total_savings = self.calculate_total_savings()
+        tresorerie = Tresorerie.objects.filter(session=session).first()
+
+        if tresorerie and tresorerie.amount > 0:
+            return (Decimal(total_savings) / tresorerie.amount) * 100
+        return Decimal(0)
 
     def __str__(self):
         return f"MEMBRE : {self.username} (ID: {self.user_id})"
 
-    def __str__(self):
-        return f"{self.username} (ID: {self.user_id})"

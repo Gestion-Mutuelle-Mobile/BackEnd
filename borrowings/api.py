@@ -1,4 +1,4 @@
-from borrowings.models import Borrowing
+from operationApp.models import Borrowing
 from rest_framework import viewsets, permissions
 from .serializers import BorrowingSerializer
 

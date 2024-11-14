@@ -1,4 +1,7 @@
 from rest_framework import serializers
+
+from mutualApp.models import Session
+from operationApp.models import ObligatoryContribution
 from .models import Member
 
 class MemberSerializer(serializers.ModelSerializer):
@@ -15,3 +18,14 @@ class MemberSerializer(serializers.ModelSerializer):
 
     def get_total_savings(self, obj):
         return obj.calculate_savings()
+
+    def get_has_contributed(self, obj):
+        """
+        Vérifie si le membre a payé sa contribution obligatoire pour la session active la plus récente.
+        """
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+        if session:
+            return ObligatoryContribution.objects.filter(
+                member_id=obj, session=session, contributed=True
+            ).exists()
+        return False

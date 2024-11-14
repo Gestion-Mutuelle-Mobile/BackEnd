@@ -1,4 +1,4 @@
-from refunds.models import Refund
+from operationApp.models import Refund
 from rest_framework import viewsets, permissions
 from .serializers import RefundSerializer
 
