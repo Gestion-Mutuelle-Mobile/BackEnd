@@ -15,7 +15,7 @@ from members.models import Member
 class Exercise(models.Model):
     active = models.BooleanField(default=True)
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
-    create_at = models.DateTimeField(auto_now=True)
+    create_at = models.DateTimeField(auto_now_add=True,auto_created=True)
     def update_active(self):
         """
         Met à jour le champ 'active' à False si l'exercice a été créé il y a plus d'un an.
@@ -34,6 +34,8 @@ class Session(models.Model):
     state = models.CharField(max_length=255, default='SAVING')
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
     active = models.BooleanField(default=True)
+    create_at = models.DateTimeField(auto_now_add=True, auto_created=True)
+
 
     def save(self, *args, **kwargs):
         """
