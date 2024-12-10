@@ -2,9 +2,12 @@ from rest_framework import serializers
 
 from mutualApp.models import Session
 from operationApp.models import ObligatoryContribution
+from users.serializers import UserSerializer
 from .models import Member
 
 class MemberSerializer(serializers.ModelSerializer):
+    user = UserSerializer(source='user_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+
     class Meta:
         model = Member
         fields = '__all__'

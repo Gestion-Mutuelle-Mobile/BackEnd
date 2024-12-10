@@ -1,21 +1,52 @@
 from rest_framework import serializers
+
+from members.serializers import MemberSerializer
 from .models import *
 
 class PersonalContributionSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+
     class Meta:
         model = PersonalContribution
         fields = '__all__'
 
+class ContributionSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure les infos du membre
+
+    class Meta:
+        model = Contribution
+        fields = '__all__'
+
+    def to_representation(self, instance):
+        """
+        Ajoute les champs spécifiques selon le type de contribution.
+        """
+        representation = super().to_representation(instance)
+
+        # Détecter le type de contribution
+        if isinstance(instance, ObligatoryContribution):
+            representation['type'] = 'Obligatory'
+            representation['contributed'] = instance.contributed
+            representation['amount'] = instance.amount
+        elif isinstance(instance, PersonalContribution):
+            representation['type'] = 'Personal'
+            representation['date'] = instance.date
+            representation['help_id'] = instance.help_id.id if instance.help_id else None
+            representation['amount'] = instance.amount
+
+        return representation
 
 class HelpSerializer(serializers.ModelSerializer):
     class Meta:
         model = Help
-        fields = '__all__'
+        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id']
 
     def get_collected_amount(self, obj):
         return obj.calculate_help_amount()
 
 class Obligatory_ContributionSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+
     class Meta:
         model = ObligatoryContribution
         fields = '__all__'

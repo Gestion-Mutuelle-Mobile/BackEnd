@@ -5,17 +5,55 @@ from django.db import models
 from django.utils import timezone
 from mutualApp.models import Session, Tresorerie, FondSocial
 from decimal import Decimal
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 class Operation(models.Model):
-    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL,null=True)
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL, null=True)
     create_at = models.DateTimeField(auto_now=True)
-    session_id= models.ForeignKey('mutualApp.Session',on_delete=models.CASCADE)
+    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE)
+
+    def save(self, *args, **kwargs):
+        """
+        Reedéfinit la méthode save pour attribuer automatiquement la dernière session active.
+        Si aucune session active n'est trouvée, l'opération n'est pas sauvegardée.
+        """
+        from mutualApp.models import Session
+
+        # Recherche la dernière session active
+        active_session = Session.objects.filter(active=True).order_by('-create_at').first()
+
+        if active_session:
+            self.session_id = active_session  # Assigne la session active
+            super().save(*args, **kwargs)    # Appelle la méthode save parente
+        else:
+            # Message si aucune session active n'est trouvée
+            print("Aucune session active pour le moment. L'opération ne peut pas être enregistrée.")
+
 
 # Create your models here.
-class Contribution(Operation):
-    member_id = models.ForeignKey('members.Member', on_delete=models.SET_NULL,null=True)
+class Contribution(models.Model):
+    id=models.IntegerField(auto_created=True, primary_key=True,editable=False)
+    member_id = models.ForeignKey('members.Member', on_delete=models.SET_NULL,null=True,blank=True)
     state = models.BooleanField(default=True)
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL, null=True)
+    create_at = models.DateTimeField(auto_now=True)
+    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE)
+    def save(self, *args, **kwargs):
+        """
+        Reedéfinit la méthode save pour attribuer automatiquement la dernière session active.
+        Si aucune session active n'est trouvée, l'opération n'est pas sauvegardée.
+        """
+        from mutualApp.models import Session
+
+        # Recherche la dernière session active
+        active_session = Session.objects.filter(active=True).order_by('-create_at').first()
+
+        if active_session:
+            self.session_id = active_session  # Assigne la session active
+            super().save(*args, **kwargs)    # Appelle la méthode save parente
+        else:
+            # Message si aucune session active n'est trouvée
+            print("Aucune session active pour le moment. L'opération ne peut pas être enregistrée.")
 
 class PersonalContribution(Contribution):
     date = models.CharField(max_length=20)
@@ -45,26 +83,14 @@ class Help(Operation):
         ).aggregate(total_amount=Sum('amount'))['total_amount'] or 0
         return collected_amount
 
-class ObligatoryContribution(Operation):
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE)
+class ObligatoryContribution(Contribution):
     contributed = models.BooleanField(default=False)
     amount = models.IntegerField(default=10000)
+
     def __str__(self):
         return f"Contribution Obligatoire de {self.member_id.username}"
 
-    def save(self, *args, **kwargs):
-        """
-        Lors de l'enregistrement d'une contribution obligatoire, met à jour le fond social
-        de la session correspondante.
-        """
-        super().save(*args, **kwargs)
 
-        # Mettre à jour le FondSocial de la session
-        session = self.session_id  # session liée à l'opération
-        from mutualApp.models import FondSocial
-        fond_social = FondSocial.objects.filter(session=session).first()
-        if fond_social:
-            fond_social.update_fonds_social()
 
 # model du pret
 class Borrowing(Operation):
@@ -90,6 +116,11 @@ class Borrowing(Operation):
 
         # Appeler la méthode save parent pour enregistrer les modifications
         super().save(*args, **kwargs)
+    @property
+    def is_late(self):
+        if self.payment_date_line and datetime.now() > self.payment_date_line:
+            return True
+        return False
 
     def __str__(self):
         return f"Prêt de {self.amount_borrowed} pour {self.member_id.username}, à rembourser avant le {self.payment_date_line}"
@@ -121,6 +152,10 @@ class Epargne(Operation):
         if tresorerie and tresorerie.amount > 0:
             return (Decimal(self.amount) / tresorerie.amount) * 100
         return Decimal(0)
+
+
+
+
 
 # model du remboursement
 class Refund(models.Model):

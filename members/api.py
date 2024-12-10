@@ -14,12 +14,15 @@ from operationApp.models import ObligatoryContribution
 from mutualApp.models import Session
 from .models import Member
 from .serializers import MemberSerializer
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = MemberSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
     @action(detail=True, methods=['get'])
     def debt(self, request, pk=None):
