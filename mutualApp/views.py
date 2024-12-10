@@ -6,16 +6,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from django_filters.rest_framework import DjangoFilterBackend
 
 class ExerciseViewSet(viewsets.ModelViewSet):
     queryset = Exercise.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = ExerciseSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
 class SessionViewSet(viewsets.ModelViewSet):
     queryset = Session.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = SessionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
 
 
@@ -23,12 +28,16 @@ class SessionViewSet(viewsets.ModelViewSet):
 class FondSocialViewSet(viewsets.ModelViewSet):
     queryset = FondSocial.objects.all()
     serializer_class = FondSocialSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
 
 # ViewSet pour Tresorerie
 class TresorerieViewSet(viewsets.ModelViewSet):
     queryset = Tresorerie.objects.all()
     serializer_class = TresorerieSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
 
 # Vue pour retirer une somme du FondSocial de la session active la plus récente

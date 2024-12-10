@@ -5,12 +5,70 @@ from rest_framework import viewsets, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import *
-
+from django_filters.rest_framework import DjangoFilterBackend
 class PersonalContributionViewSet(viewsets.ModelViewSet):
     queryset = PersonalContribution.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = PersonalContributionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par user_id
 
+
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+class ContributionViewSet(viewsets.ModelViewSet):
+    queryset = Contribution.objects.all()
+    permission_classes = [permissions.AllowAny]
+    serializer_class = ContributionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__'
+
+    def get_queryset(self):
+        """
+        Redéfinir le queryset pour inclure toutes les contributions
+        (ObligatoryContribution et PersonalContribution).
+        """
+        return Contribution.objects.all()
+
+    @action(detail=False, methods=['get'])
+    def obligatory(self, request):
+        """
+        Endpoint pour retourner les contributions obligatoires et personnelles combinées.
+        """
+        obligatory_contributions = ObligatoryContribution.objects.all()
+        personal_contributions = PersonalContribution.objects.all()
+
+        # Combine les deux ensembles
+        all_contributions = list(obligatory_contributions) + list(personal_contributions)
+
+        # Sérialisation des contributions combinées
+        serializer = self.get_serializer(all_contributions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def personal(self, request):
+        """
+        Endpoint pour retourner uniquement les contributions personnelles.
+        """
+        personal_contributions = PersonalContribution.objects.all()
+        serializer = self.get_serializer(personal_contributions, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def all_contributions(self, request):
+        """
+        Endpoint pour retourner les contributions obligatoires et personnelles combinées.
+        """
+        obligatory_contributions = ObligatoryContribution.objects.all()
+        personal_contributions = PersonalContribution.objects.all()
+
+        # Combine les deux ensembles
+        all_contributions = list(obligatory_contributions) + list(personal_contributions)
+
+        # Sérialisation des contributions combinées
+        serializer = self.get_serializer(all_contributions, many=True)
+        return Response(serializer.data)
 
 
 
@@ -18,6 +76,8 @@ class HelpViewSet(viewsets.ModelViewSet):
     queryset = Help.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = HelpSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par user_id
 
     @action(detail=True, methods=['get'])
     def collected_amount(self, request, pk=None):
@@ -50,6 +110,8 @@ class Obligatory_ContributionViewSet(viewsets.ModelViewSet):
     queryset = ObligatoryContribution.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = Obligatory_ContributionSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par user_id
 
 class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
@@ -60,11 +122,15 @@ class EpargneViewSet(viewsets.ModelViewSet):
     queryset = Epargne.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = EpargneSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
 class RefundViewSet(viewsets.ModelViewSet):
     queryset = Refund.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = RefundSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 
     def perform_create(self, serializer):
         refund = serializer.save()
