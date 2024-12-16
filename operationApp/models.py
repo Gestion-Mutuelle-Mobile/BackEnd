@@ -64,7 +64,7 @@ class PersonalContribution(Contribution):
 
 class Help(Operation):
     limit_date = models.DateField()
-    amount_expected = models.IntegerField()
+    amount_expected = models.FloatField()
     comments = models.TextField(max_length=255)
     state = models.BooleanField(default=True)
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE,related_name='operation_help_set') # le memebre qui a besoin de l'aide
@@ -85,27 +85,26 @@ class Help(Operation):
 
 class ObligatoryContribution(Contribution):
     contributed = models.BooleanField(default=False)
-    amount = models.IntegerField(default=10000)
+    amount = models.FloatField(default=10000)
 
     def __str__(self):
         return f"Contribution Obligatoire de {self.member_id.username}"
 
 
-
 # model du pret
 class Borrowing(Operation):
-    interest = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    interest = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) #champs automatically
     amount_borrowed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    payment_date_line = models.DateTimeField(blank=True, null=True)
+    amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) #champs automatically
+    payment_date_line = models.DateTimeField(blank=True, null=True) #champs automatically
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='borrowings_from_operation')
     state = models.BooleanField(default=False)  # False = non remboursé, True = remboursé
 
     def save(self, *args, **kwargs):
         # Calculer l'intérêt comme 5% du montant emprunté
         if self.amount_borrowed is not None:
-            self.interest = self.amount_borrowed * 0.05
+            self.interest = Decimal(float(self.amount_borrowed) * 0.05)
 
             # Calculer le montant total à rembourser (emprunté + intérêts)
             self.amount_to_pay = self.amount_borrowed + self.interest
@@ -137,10 +136,17 @@ class Epargne(Operation):
 
         # Mise à jour de la trésorerie de la session
         session = self.session_id  # session liée à l'opération
-        tresorerie = Tresorerie.objects.filter(session=session).first()
-        if tresorerie:
-            tresorerie.amount += Decimal(self.amount)
-            tresorerie.update_treso()
+        if session:
+            tresorerie = Tresorerie.objects.filter(session=session).first()
+            
+            
+            if tresorerie:
+                tresorerie.amount += Decimal(self.amount)
+                tresorerie.update_treso()
+            else:
+                tresorerie = Tresorerie.objects.create(amount=Decimal(self.amount),session=self.session_id)
+                tresorerie.update_treso()
+                
 
     def calculate_tresorerie_percentage(self):
         """
