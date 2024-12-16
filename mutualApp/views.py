@@ -80,6 +80,6 @@ class SubstractTresorerieView(APIView):
             return Response({"error": "Tresorerie non trouvée pour la session active."}, status=status.HTTP_404_NOT_FOUND)
 
         # Appliquer le retrait
-        tresorerie.substract_amount(float(amount))
+        tresorerie.substract(float(amount))
         serializer = TresorerieSerializer(tresorerie)
         return Response(serializer.data, status=status.HTTP_200_OK)

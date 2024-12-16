@@ -37,6 +37,8 @@ class ContributionSerializer(serializers.ModelSerializer):
         return representation
 
 class HelpSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+
     class Meta:
         model = Help
         fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id']
@@ -52,9 +54,11 @@ class Obligatory_ContributionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class BorrowingSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+
     class Meta:
         model = Borrowing
-        fields = '__all__'
+        fields = ['amount_borrowed','member_id','administrator_id','session_id','member']
 
 class EpargneSerializer(serializers.ModelSerializer):
     class Meta:
@@ -65,6 +69,8 @@ class EpargneSerializer(serializers.ModelSerializer):
         return obj.calculate_tresorerie_percentage()
 
 class RefundSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+    borrowing=BorrowingSerializer(source='borrowing_id', read_only=True)
     class Meta:
         model = Refund
         fields = '__all__'

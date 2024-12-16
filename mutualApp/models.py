@@ -1,5 +1,6 @@
 
 
+import decimal
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -121,7 +122,8 @@ class Tresorerie(models.Model):
         pass
 
     def substract(self,amount):
-        self.amount -= amount
+        self.amount -=  decimal.Decimal(amount)
+        
         self.updated_at = timezone.now()
         self.save()
     def addAmmount(self,amount):
