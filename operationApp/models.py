@@ -6,6 +6,9 @@ from django.utils import timezone
 from mutualApp.models import Session, Tresorerie, FondSocial
 from decimal import Decimal
 from datetime import datetime, timedelta
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
+from decimal import Decimal
 
 class Operation(models.Model):
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL, null=True)
@@ -92,62 +95,184 @@ class ObligatoryContribution(Contribution):
 
 
 # model du pret
+
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
+from decimal import Decimal
+
 class Borrowing(Operation):
-    interest = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) #champs automatically
+    # Champs existants conservés
+    interest = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     amount_borrowed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) #champs automatically
-    payment_date_line = models.DateTimeField(blank=True, null=True) #champs automatically
+    amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    payment_date_line = models.DateTimeField(blank=True, null=True)
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='borrowings_from_operation')
-    state = models.BooleanField(default=False)  # False = non remboursé, True = remboursé
+    state = models.BooleanField(default=False)
+    
+    # #modification: Ajout d'un champ pour suivre la répartition du prêt
+    loan_distribution = models.JSONField(default=dict, blank=True, null=True)
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
-        # Calculer l'intérêt comme 5% du montant emprunté
+        # Calcul de l'intérêt et du montant à payer
         if self.amount_borrowed is not None:
             self.interest = Decimal(float(self.amount_borrowed) * 0.05)
-
-            # Calculer le montant total à rembourser (emprunté + intérêts)
             self.amount_to_pay = self.amount_borrowed + self.interest
-
-            # Calculer la date limite de paiement (30 jours après la date de création)
+            
+            # #modification: Définition de la date limite de paiement
             if not self.payment_date_line:
                 self.payment_date_line = timezone.now() + timedelta(days=30)
-
-        # Appeler la méthode save parent pour enregistrer les modifications
+            
+            # #modification: Répartition du prêt entre les membres épargnants
+            self.distribute_loan()
+        
         super().save(*args, **kwargs)
-    @property
-    def is_late(self):
-        if self.payment_date_line and datetime.now() > self.payment_date_line:
-            return True
-        return False
+    
+    def distribute_loan(self):
+        # Récupérer tous les membres épargnants actifs
+        from members.models import Member
+        active_members = Member.objects.filter(active=True)
+        total_members = active_members.count()
+        
+        if total_members == 0:
+            raise ValidationError("Aucun membre actif pour répartir le prêt")
+        
+        # Montant par membre
+        amount_per_member = self.amount_borrowed / total_members
+        
+        # Initialisation du dictionnaire de répartition
+        self.loan_distribution = {}
+        
+        # Variables pour gérer le reste du prêt
+        remaining_amount = self.amount_borrowed
+        
+        for member in active_members:
+            # Calcul de l'épargne réelle du membre
+            member_savings = member.calculate_total_savings()
+            
+            if member_savings > 0:
+                # Si le membre a suffisamment d'épargne
+                if member_savings >= amount_per_member:
+                    contribution = amount_per_member
+                else:
+                    # Prendre toute son épargne et répartir le reste
+                    contribution = member_savings
+                
+                # Mettre à jour l'épargne du membre
+                self.update_member_savings(member, contribution)
+                
+                # Enregistrer la contribution dans la distribution
+                self.loan_distribution[str(member.id)] = float(contribution)
+                
+                remaining_amount -= contribution
+            
+        # Gérer le montant résiduel si nécessaire
+        if remaining_amount > 0:
+            self.handle_remaining_loan(remaining_amount)
+        
+        return self.loan_distribution
+    
+    def update_member_savings(self, member, amount):
+        # Récupérer l'épargne du membre pour la session courante
+        from operationApp.models import Epargne
+        current_session = self.session_id
+        
+        # Trouver l'épargne du membre
+        savings = Epargne.objects.filter(
+            member_id=member, 
+            session_id=current_session
+        ).first()
+        
+        if savings:
+            # Réduire le montant temps réel
+            savings.real_time_amount -= amount
+            
+            # Enregistrer une trace de l'utilisation de l'épargne
+            LoanUtilizationTrace.objects.create(
+                epargne=savings,
+                borrowing=self,
+                amount_used=amount,
+                real_time_amount_before=savings.real_time_amount + amount,
+                real_time_amount_after=savings.real_time_amount
+            )
+            
+            savings.save()
+    
+    def handle_remaining_loan(self, remaining_amount):
+        # Logique de gestion du montant résiduel
+        # On le répartit entre les membres ayant encore de l'épargne
+        from members.models import Member
+        
+        active_members = Member.objects.filter(active=True)
+        eligible_members = [
+            m for m in active_members 
+            if m.calculate_total_savings() > 0
+        ]
+        
+        if not eligible_members:
+            raise ValidationError("Aucun membre n'a suffisamment d'épargne")
+        
+        amount_per_remaining_member = remaining_amount / len(eligible_members)
+        
+        for member in eligible_members:
+            # Mise à jour de l'épargne et de la distribution
+            self.update_member_savings(member, amount_per_remaining_member)
+            
+            current_contribution = self.loan_distribution.get(str(member.id), 0)
+            self.loan_distribution[str(member.id)] = current_contribution + float(amount_per_remaining_member)
 
-    def __str__(self):
-        return f"Prêt de {self.amount_borrowed} pour {self.member_id.username}, à rembourser avant le {self.payment_date_line}"
+
 
 # model de l'epargne
 class Epargne(Operation):
-    # id = models.IntegerField(max_length=10)
+    # Champs existants conservés
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='epargne_from_operation')
-    amount = models.IntegerField()
-
+    amount = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)  # #modification: passage en DecimalField
+    
+    # #modification: Ajout de champs pour suivre l'épargne de base et en temps réel
+    base_amount = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    real_time_amount = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    
     def save(self, *args, **kwargs):
-        # Enregistrer l'épargne
+        # Initialisation des montants si c'est une nouvelle épargne
+        if not self.pk:
+            self.base_amount = self.amount
+            self.real_time_amount = self.amount
+        
+        # Sauvegarde de l'épargne
         super().save(*args, **kwargs)
-
-        # Mise à jour de la trésorerie de la session
-        session = self.session_id  # session liée à l'opération
+        
+        # Mise à jour de la trésorerie
+        session = self.session_id
         if session:
-            tresorerie = Tresorerie.objects.filter(session=session).first()
+            tresorerie, created = Tresorerie.objects.get_or_create(
+                session=session, 
+                defaults={'amount': Decimal(self.amount)}
+            )
             
-            
-            if tresorerie:
+            if not created:
                 tresorerie.amount += Decimal(self.amount)
                 tresorerie.update_treso()
-            else:
-                tresorerie = Tresorerie.objects.create(amount=Decimal(self.amount),session=self.session_id)
-                tresorerie.update_treso()
-                
-
+    
+    def update_real_time_amount(self, amount_to_subtract):
+        """
+        Méthode pour mettre à jour le montant en temps réel lors des prêts
+        """
+        if amount_to_subtract > self.real_time_amount:
+            raise ValueError("Le montant à soustraire dépasse l'épargne disponible")
+        
+        self.real_time_amount -= amount_to_subtract
+        self.save()
+        
+        return self.real_time_amount
+    
+    def reset_real_time_amount(self):
+        """
+        Réinitialise le montant en temps réel à son montant de base
+        """
+        self.real_time_amount = self.base_amount
+        self.save()
     def calculate_tresorerie_percentage(self):
         """
         Calcule le pourcentage de la treso que représente cette épargne
@@ -165,42 +290,93 @@ class Epargne(Operation):
 
 # model du remboursement
 class Refund(models.Model):
-    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE,
-                                         related_name='refunds_from_operation')
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, default=1,
-                                  related_name='refunds_from_operation')
-    borrowing_id = models.ForeignKey('operationApp.Borrowing', on_delete=models.CASCADE, null=True,
-                                     related_name='refunds_from_operation')
-    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE, related_name='refunds_from_operation')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    create_at = models.DateTimeField(auto_now_add=True)
+    # Champs existants conservés
+    member_id = models.ForeignKey(
+        'members.Member', 
+        on_delete=models.CASCADE,
+        related_name='refunds_operation_app'  # Nom unique pour ce membre
+    )
+    borrowing_id = models.ForeignKey(
+        'operationApp.Borrowing', 
+        on_delete=models.CASCADE, 
+        null=True,
+        related_name='refunds_operation_app'  # Nom unique pour cet emprunt
+    )
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL, null=True,
+                                         
+                                         related_name='refunds_operation_app')  # Nom unique pour cet administrateur
+    create_at = models.DateTimeField(auto_now=True)
+    session_id = models.ForeignKey('mutualApp.Session', on_delete=models.CASCADE,
+                                   related_name='refunds_operation_app')
+    amount = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    
+    redistribution_details = models.JSONField(default=dict, blank=True, null=True)
 
     def save(self, *args, **kwargs):
-        # Appeler le save parent pour enregistrer le remboursement
         super().save(*args, **kwargs)
-
-        # Mettre à jour l'emprunt avec le montant remboursé
+        
+        # Mise à jour de l'emprunt
         borrowing = self.borrowing_id
         borrowing.amount_paid += self.amount
+        
+        # Vérification du statut de remboursement
+        if borrowing.amount_paid >= borrowing.amount_to_pay:
+            borrowing.state = True
+        
         borrowing.save()
+        
+        # Distribution des bénéfices
+        self.redistribute_refund()
+    
+    def redistribute_refund(self):
+        # Calcul des bénéfices (intérêts)
+        borrowing = self.borrowing_id
+        benefits = borrowing.interest
+        
+        # Récupération des épargnes de la session
+        savings = Epargne.objects.filter(session_id=self.session_id)
+        total_session_savings = sum(saving.amount for saving in savings)
+        
+        # Initialisation des détails de redistribution
+        self.redistribution_details = {}
+        
+        # Distribution proportionnelle
+        for saving in savings:
+            saving_percentage = saving.amount / total_session_savings
+            benefit_share = benefits * saving_percentage
+            
+            # Tracer l'évolution du montant temps réel
+            old_real_time_amount = saving.real_time_amount
+            saving.real_time_amount += benefit_share
+            saving.save()
+            
+            # Créer une trace de redistribution
+            RefundDistributionTrace.objects.create(
+                epargne=saving,
+                refund=self,
+                benefit_share=benefit_share,
+                real_time_amount_before=old_real_time_amount,
+                real_time_amount_after=saving.real_time_amount
+            )
+            
+            # Enregistrement des détails
+            self.redistribution_details[str(saving.member_id.id)] = float(benefit_share)
+        
+        self.save()
+        return self.redistribution_details
 
-        # Vérifier si le membre a des épargnes dans la même session que le prêt
-        session = borrowing.session_id
-        total_savings = self.member_id.calculate_total_savings()
-        tresorerie = Tresorerie.objects.filter(session=session).first()
-
-        # Assurez-vous que la trésorerie et l'épargne totale existent pour calculer la part de remboursement
-        if total_savings > 0 and tresorerie and tresorerie.amount > 0:
-            # Calculer le pourcentage de remboursement à distribuer à chaque épargne
-            percentage = Decimal(total_savings) / tresorerie.amount
-            refund_share = self.amount * percentage
-
-            # Obtenir toutes les épargnes du membre dans cette session
-            savings = Epargne.objects.filter(member_id=self.member_id, session=session)
-
-            # Calculer la part de chaque épargne en fonction de sa proportion
-            for saving in savings:
-                saving_percentage = Decimal(saving.amount) / total_savings
-                amount_to_add = refund_share * saving_percentage
-                saving.amount += amount_to_add
-                saving.save()
+# Nouvelle classe de trace pour les redistributions
+class RefundDistributionTrace(models.Model):
+    epargne = models.ForeignKey(Epargne, on_delete=models.CASCADE)
+    refund = models.ForeignKey(Refund, on_delete=models.CASCADE)
+    benefit_share = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    real_time_amount_before = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    real_time_amount_after = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    created_at = models.DateTimeField(auto_now_add=True)
+class LoanUtilizationTrace(models.Model):
+    epargne = models.ForeignKey(Epargne, on_delete=models.CASCADE)
+    borrowing = models.ForeignKey(Borrowing, on_delete=models.CASCADE)
+    amount_used = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    real_time_amount_before = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    real_time_amount_after = models.DecimalField(max_digits=10, decimal_places=2,default=0.00)
+    created_at = models.DateTimeField(auto_now_add=True)

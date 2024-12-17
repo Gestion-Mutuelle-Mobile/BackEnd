@@ -3,36 +3,70 @@ from users.models import User
 from administrators.models import Administrator
 from decimal import Decimal
 from datetime import timedelta
+from django.utils import timezone
+
 # Create your models here.
 class Member(models.Model):
-    # id = models.IntegerField(max_length=10)
+    # Champs existants conservés
     user_id = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    username = models.CharField(max_length=8,  blank=True)
-    
+    username = models.CharField(max_length=8, blank=True)
     active = models.BooleanField(default=True)
-    social_crown = models.IntegerField(default=0)
-    inscription = models.IntegerField(default=10000)
-    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE)
-
+    
+    # #modification: Ajout de champs pour suivre la santé financière
+    total_savings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_borrowings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
     def save(self, *args, **kwargs):
-        # Appeler le save parent pour enregistrer le membre
         super().save(*args, **kwargs)
-
-        # Rechercher la session active la plus récente
-        from mutualApp.models import Session
-        session = Session.objects.filter(active=True).order_by('-create_at').first()
-
+        
+        # Mise à jour automatique du fonds social
+        self.update_social_fund()
+    
+    def update_social_fund(self):
+        """
+        Mise à jour du fonds social lors de chaque sauvegarde du membre
+        """
+        from mutualApp.models import Session, FondSocial
+        
+        session = Session.objects.filter(active=True).first()
         if session:
-            # Vérifier si un fonds social existe pour cette session
-            from mutualApp.models import FondSocial
-            fond_social, created = FondSocial.objects.get_or_create(session=session)
-
-            # Si le fonds social existe déjà, on le met à jour ; sinon, il est créé avec l'inscription du membre
+            fond_social, created = FondSocial.objects.get_or_create(
+                session=session, 
+                defaults={'amount': self.inscription}
+            )
+            
             if not created:
                 fond_social.update_fonds_social()
-            else:
-                # Initialiser le montant du fonds social avec l'inscription du membre
-                fond_social.update_fonds_social()
+    
+    def can_borrow(self, amount):
+        """
+        Vérifie si le membre peut emprunter un montant donné
+        """
+        total_savings = self.calculate_total_savings()
+        max_borrowing = total_savings * 2  # Limite d'emprunt à deux fois l'épargne
+        
+        return amount <= max_borrowing and not self.has_late_borrowings()
+    
+    def has_late_borrowings(self):
+        from operationApp.models import Borrowing
+
+        """
+        Vérifie si le membre a des emprunts en retard
+        """
+        return Borrowing.objects.filter(
+            member_id=self, 
+            state=False,  # Emprunt non remboursé
+            payment_date_line__lt=timezone.now()  # Date limite dépassée
+        ).exists()
+    
+    def calculate_borrowing_capacity(self):
+        """
+        Calcule la capacité d'emprunt du membre
+        """
+        total_savings = self.calculate_total_savings()
+        return total_savings * 2
+
+
     def calculate_debt(self):
         """
         Calcule le montant total restant à rembourser par le membre.
