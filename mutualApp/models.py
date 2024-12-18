@@ -1,5 +1,6 @@
 
 
+import decimal
 from django.db import models
 from django.utils import timezone
 from datetime import timedelta
@@ -109,19 +110,61 @@ class FondSocial(models.Model):
         return f"Fonds social de la Session {self.session.create_at} montant : {self.amount}"
 
 
-# Modèle Tresorerie (structure de base)
+
+
+
 class Tresorerie(models.Model):
     session = models.ForeignKey('Session', on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    # #modification: Ajout de champs pour suivre les opérations
+    total_savings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total_borrowings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    def update_treso(self):
+        from operationApp.models import Borrowing, Epargne
 
+        """
+        Mise à jour détaillée de la trésorerie
+        """
+        # Calcul des épargnes totales pour la session
+        savings = Epargne.objects.filter(session_id=self.session)
+        self.total_savings = sum(saving.amount for saving in savings)
+        
+        # Calcul des emprunts totaux pour la session
+        borrowings = Borrowing.objects.filter(session_id=self.session)
+        self.total_borrowings = sum(borrowing.amount_borrowed for borrowing in borrowings)
+        
+        # Mise à jour du montant
+        self.amount = self.total_savings - self.total_borrowings
+        
+        self.updated_at = timezone.now()
+        self.save()
+    
+    def can_support_borrowing(self, amount):
+        """
+        Vérifie si la trésorerie peut supporter un emprunt
+        """
+        return amount <= (self.amount * 0.8)  # Limite à 80% de la trésorerie
+    
+    def log_transaction(self, transaction_type, amount):
+        """
+        Enregistre les transactions importantes
+        """
+        TransactionLog.objects.create(
+            tresorerie=self,
+            transaction_type=transaction_type,
+            amount=amount
+        )
     # Placeholder pour la méthode update_treso, à implémenter plus tard.
     def update_treso(self):
         self.updated_at = timezone.now()
         pass
 
     def substract(self,amount):
-        self.amount -= amount
+        self.amount -=  decimal.Decimal(amount)
+        
         self.updated_at = timezone.now()
         self.save()
     def addAmmount(self,amount):
@@ -132,4 +175,9 @@ class Tresorerie(models.Model):
     def __str__(self):
         return f"Trésorerie de la Session {self.session.create_at} montant : {self.amount}"
 
-
+# Classe de log pour suivre les transactions
+class TransactionLog(models.Model):
+    tresorerie = models.ForeignKey(Tresorerie, on_delete=models.CASCADE)
+    transaction_type = models.CharField(max_length=50)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    timestamp = models.DateTimeField(auto_now_add=True)

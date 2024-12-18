@@ -2,7 +2,8 @@ from django.urls import path
 from rest_framework import routers
 from .views import  *
 router = routers.DefaultRouter()
-router.register('api/contributions',PersonalContributionViewSet,'contributions')
+router.register('api/Personnalcontributions',PersonalContributionViewSet,'Personnal_contributions')
+router.register('api/contributions',ContributionViewSet,'contributions')
 router.register('api/helps',HelpViewSet,'helps')
 router.register('api/obligatory_contributions',Obligatory_ContributionViewSet,'obligatory_contributions')
 router.register('api/borrowings',BorrowingViewSet,'borrowings')

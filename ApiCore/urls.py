@@ -9,6 +9,7 @@ urlpatterns = [
     path('administration/', admin.site.urls),
     path('', include('accounts.urls')),
     path('',include('mutualApp.urls')),
+    path('',include('operationApp.urls')),
     path('', include('api.urls')),
     path('', include('members.urls')),
     path('', include('users.urls')),
