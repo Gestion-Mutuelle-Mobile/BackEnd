@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import *
 from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import FilterSet,CharFilter
 class PersonalContributionViewSet(viewsets.ModelViewSet):
     queryset = PersonalContribution.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -113,10 +114,20 @@ class Obligatory_ContributionViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = '__all__' # Autorise le filtrage par user_id
 
+class BorrowingFilterSet(FilterSet):
+    class Meta:
+        model = Borrowing  # Remplacez par le nom de votre modèle
+        # OU
+        fields = '__all__' # Incluez uniquement les champs désirés
+        exclude = ['loan_distribution']  # Excluez le champ JSON
+
+
 class BorrowingViewSet(viewsets.ModelViewSet):
     queryset = Borrowing.objects.all()
     permission_classes = [permissions.AllowAny]
     serializer_class = BorrowingSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = BorrowingFilterSet
 
 class EpargneViewSet(viewsets.ModelViewSet):
     queryset = Epargne.objects.all()

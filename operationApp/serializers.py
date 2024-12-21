@@ -70,10 +70,11 @@ class BorrowingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Borrowing
-        fields = ['amount_borrowed','member_id','administrator_id','session_id','member','session','administrator','amount_paid','amount_to_pay','id']
+        fields = ['amount_borrowed','member_id','administrator_id','session_id','member','session','administrator','amount_paid','amount_to_pay','id', 'payment_date_line', 'create_at']
         extra_kwargs = {
             'amount_paid': {'read_only': True},
             'amount_to_pay': {'read_only': True}
+            , 'payment_date_line':{'read_only': True}, 'create_at':{'read_only': True}
         }
         
     def to_representation(self, instance):
@@ -91,6 +92,8 @@ class BorrowingSerializer(serializers.ModelSerializer):
         # Supprime amount_paid et amount_to_pay des données pour les opérations d'écriture
         internal_value.pop('amount_paid', None)
         internal_value.pop('amount_to_pay', None)
+        internal_value.pop('payment_date_line', None)
+        internal_value.pop('create_at', None)
         internal_value.pop('id', None)
         return internal_value
     def create(self, validated_data):

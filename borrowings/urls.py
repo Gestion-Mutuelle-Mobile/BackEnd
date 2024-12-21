@@ -4,5 +4,5 @@ from operationApp.views import BorrowingViewSet
 
 
 router = routers.DefaultRouter()
-router.register('api/borrowings',BorrowingViewSet,'borrowings')
+router.register('api/borrowings_old',BorrowingViewSet,'borrowings')
 urlpatterns = router.urls
