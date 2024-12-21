@@ -59,7 +59,7 @@ class Contribution(models.Model):
             print("Aucune session active pour le moment. L'opération ne peut pas être enregistrée.")
 
 class PersonalContribution(Contribution):
-    date = models.CharField(max_length=20)
+    date = models.DateTimeField(auto_now=True)
     help_id = models.ForeignKey('operationApp.Help', on_delete=models.SET_NULL,null=True) #l'aide en question
     amount = models.IntegerField(default=0)
     def __str__(self):
