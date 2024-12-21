@@ -9,12 +9,14 @@ from django.utils import timezone
 class Member(models.Model):
     # Champs existants conservés
     user_id = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.CASCADE)
     username = models.CharField(max_length=8, blank=True)
     active = models.BooleanField(default=True)
     
     # #modification: Ajout de champs pour suivre la santé financière
     total_savings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_borrowings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    inscription = models.DecimalField(max_digits=10, decimal_places=2, default=10000)
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -91,7 +93,7 @@ class Member(models.Model):
         session = Session.objects.filter(active=True).order_by('-create_at').first()
         if session:
             from operationApp.models import Epargne
-            return Epargne.objects.filter(member_id=self, session=session).aggregate(
+            return Epargne.objects.filter(member_id=self, session_id=session).aggregate(
                 total_savings=models.Sum('amount')
             )['total_savings'] or 0
         return 0

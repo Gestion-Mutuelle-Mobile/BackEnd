@@ -148,8 +148,7 @@ class RegisterUserView(APIView):
             member = Member.objects.create(
                 user_id=user,
                 username=name,
-                social_crown=0,
-                administrator_id=Administrator.objects.get(id=default_admin_id)
+                administrator_id=Administrator.objects.first()
             )
 
             response_data = {
@@ -166,7 +165,6 @@ class RegisterUserView(APIView):
                     "id": member.id,
                     "username": member.username,
                     "active": member.active,
-                    "social_crown": member.social_crown,
                     "inscription": member.inscription,
                     "user_id": member.user_id.id,
                     "administrator_id": member.administrator_id.id

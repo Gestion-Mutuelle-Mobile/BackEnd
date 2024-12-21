@@ -106,7 +106,11 @@ class Borrowing(Operation):
     amount_borrowed = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    payment_date_line = models.DateTimeField(blank=True, null=True)
+    
+    # def date_par_defaut_plus_30_jours():
+    #     return timezone.now() + datetime.timedelta(days=30)
+
+    payment_date_line = models.DateTimeField(auto_now=True, blank=True, null=True)
     member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='borrowings_from_operation')
     state = models.BooleanField(default=False)
     
@@ -125,9 +129,10 @@ class Borrowing(Operation):
                 self.payment_date_line = timezone.now() + timedelta(days=30)
             
             # #modification: Répartition du prêt entre les membres épargnants
+           
             self.distribute_loan()
         
-        super().save(*args, **kwargs)
+        
     
     def distribute_loan(self):
         # Récupérer tous les membres épargnants actifs
@@ -149,8 +154,9 @@ class Borrowing(Operation):
         
         for member in active_members:
             # Calcul de l'épargne réelle du membre
-            member_savings = member.calculate_total_savings()
             
+            member_savings = member.calculate_total_savings()
+            print("AUCUNE ERREUR ICI : BOROWING")
             if member_savings > 0:
                 # Si le membre a suffisamment d'épargne
                 if member_savings >= amount_per_member:
@@ -166,6 +172,7 @@ class Borrowing(Operation):
                 self.loan_distribution[str(member.id)] = float(contribution)
                 
                 remaining_amount -= contribution
+              
             
         # Gérer le montant résiduel si nécessaire
         if remaining_amount > 0:
@@ -173,7 +180,7 @@ class Borrowing(Operation):
         
         return self.loan_distribution
     
-    def update_member_savings(self, member, amount):
+    def update_member_savings(self, member, amount, *args, **kwargs):
         # Récupérer l'épargne du membre pour la session courante
         from operationApp.models import Epargne
         current_session = self.session_id
@@ -183,11 +190,11 @@ class Borrowing(Operation):
             member_id=member, 
             session_id=current_session
         ).first()
-        
+        super().save(*args, **kwargs)
         if savings:
             # Réduire le montant temps réel
             savings.real_time_amount -= amount
-            
+            savings.save()
             # Enregistrer une trace de l'utilisation de l'épargne
             LoanUtilizationTrace.objects.create(
                 epargne=savings,
@@ -197,7 +204,7 @@ class Borrowing(Operation):
                 real_time_amount_after=savings.real_time_amount
             )
             
-            savings.save()
+           
     
     def handle_remaining_loan(self, remaining_amount):
         # Logique de gestion du montant résiduel

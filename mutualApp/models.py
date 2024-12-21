@@ -83,9 +83,9 @@ class FondSocial(models.Model):
         # Contributions obligatoires depuis la dernière mise à jour
         self.updated_at = timezone.now()
         new_contributions = ObligatoryContribution.objects.filter(
-            session=self.session,
+            session_id=self.session,
             create_at__gt=self.updated_at,
-            member__active=True  # seulement les membres actifs
+            member_id__active=True  # seulement les membres actifs
         ).aggregate(total_amount=models.Sum('amount'))['total_amount'] or 0
 
         # Frais d'inscription des nouveaux membres actifs depuis la dernière mise à jour
