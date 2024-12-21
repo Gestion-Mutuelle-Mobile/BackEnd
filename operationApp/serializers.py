@@ -41,7 +41,7 @@ class HelpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Help
-        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id']
+        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id','member']
 
     def get_collected_amount(self, obj):
         return obj.calculate_help_amount()
@@ -54,11 +54,63 @@ class Obligatory_ContributionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class BorrowingSerializer(serializers.ModelSerializer):
+   
+    administrator = serializers.PrimaryKeyRelatedField(
+        queryset=Administrator.objects.all(), 
+        source='administrator_id'
+    )
+    session = serializers.PrimaryKeyRelatedField(
+        queryset=Session.objects.all(), 
+        source='session_id'
+    )
+    
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+    
+
 
     class Meta:
         model = Borrowing
-        fields = ['amount_borrowed','member_id','administrator_id','session_id','member']
+        fields = ['amount_borrowed','member_id','administrator_id','session_id','member','session','administrator','amount_paid','amount_to_pay','id']
+        extra_kwargs = {
+            'amount_paid': {'read_only': True},
+            'amount_to_pay': {'read_only': True}
+        }
+        
+    def to_representation(self, instance):
+        """
+        Modifie la représentation pour inclure amount_paid et amount_to_pay pour les GET.
+        """
+        representation = super().to_representation(instance)
+        return representation
+
+    def to_internal_value(self, data):
+        """
+        Modifie les données internes pour exclure amount_paid et amount_to_pay pour les POST/PUT/PATCH.
+        """
+        internal_value = super().to_internal_value(data)
+        # Supprime amount_paid et amount_to_pay des données pour les opérations d'écriture
+        internal_value.pop('amount_paid', None)
+        internal_value.pop('amount_to_pay', None)
+        internal_value.pop('id', None)
+        return internal_value
+    def create(self, validated_data):
+        member = serializers.PrimaryKeyRelatedField(
+        queryset=Member.objects.all(), 
+        source='member_id',
+        
+        )
+        # Explicitly handle related object creation
+        member = validated_data.pop('member_id')
+        administrator = validated_data.pop('administrator_id')
+        session = validated_data.pop('session_id')
+
+        borrowing = Borrowing.objects.create(
+            member_id=member,
+            administrator_id=administrator,
+            session_id=session,
+            **validated_data
+        )
+        return borrowing
 
 class EpargneSerializer(serializers.ModelSerializer):
     class Meta:
