@@ -1,7 +1,6 @@
 from django.db import models
 from members.models import Member
 from administrators.models import Administrator
-from django.db import models
 from django.utils import timezone
 from mutualApp.models import Session, Tresorerie, FondSocial
 from decimal import Decimal

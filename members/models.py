@@ -11,7 +11,7 @@ class Member(models.Model):
     user_id = models.ForeignKey('users.User', on_delete=models.CASCADE)
     username = models.CharField(max_length=8, blank=True)
     active = models.BooleanField(default=True)
-    
+    inscription=models.DecimalField(default=10000,max_digits=10, decimal_places=2,)
     # #modification: Ajout de champs pour suivre la santé financière
     total_savings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_borrowings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
