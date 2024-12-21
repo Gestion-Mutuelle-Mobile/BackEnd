@@ -6,7 +6,8 @@ from operationApp.models import *
 # Register your models here.
 @admin.register(Operation)
 class OperationAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'administrator_id', 'create_at', 'session_id')  # Champs visibles
+    readonly_fields = ('create_at',)
 
 
 @admin.register(Contribution)
@@ -31,7 +32,8 @@ class Obligatory_ContributionAdmin(admin.ModelAdmin):
 
 @admin.register(Borrowing)
 class BorrowingAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'interest', 'amount_borrowed', 'payment_date_line', 'create_at')  # Champs visibles
+    readonly_fields = ('payment_date_line', 'create_at')
 
 
 @admin.register(Epargne)
