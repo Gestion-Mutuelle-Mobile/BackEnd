@@ -168,7 +168,7 @@ class Tresorerie(models.Model):
         self.updated_at = timezone.now()
         self.save()
     def addAmmount(self,amount):
-        self.amount += amount
+        self.amount += decimal.Decimal(amount)
         self.updated_at = timezone.now()
         self.save()
 
