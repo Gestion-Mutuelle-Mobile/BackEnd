@@ -9,6 +9,7 @@ class PersonalContributionSerializer(serializers.ModelSerializer):
     class Meta:
         model = PersonalContribution
         fields = '__all__'
+        
 
 class ContributionSerializer(serializers.ModelSerializer):
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure les infos du membre
@@ -82,7 +83,10 @@ class BorrowingSerializer(serializers.ModelSerializer):
         Modifie la représentation pour inclure amount_paid et amount_to_pay pour les GET.
         """
         representation = super().to_representation(instance)
+        
         return representation
+    
+    
 
     def to_internal_value(self, data):
         """
@@ -94,8 +98,10 @@ class BorrowingSerializer(serializers.ModelSerializer):
         internal_value.pop('amount_to_pay', None)
         internal_value.pop('payment_date_line', None)
         internal_value.pop('create_at', None)
+        
         internal_value.pop('id', None)
         return internal_value
+    
     def create(self, validated_data):
         member = serializers.PrimaryKeyRelatedField(
         queryset=Member.objects.all(), 
