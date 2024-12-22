@@ -33,7 +33,7 @@ class Member(models.Model):
         session = Session.objects.filter(active=True).first()
         if session:
             fond_social, created = FondSocial.objects.get_or_create(
-                session=session, 
+                session_id=session, 
                 defaults={'amount': self.inscription}
             )
             
@@ -74,7 +74,7 @@ class Member(models.Model):
         Calcule le montant total restant à rembourser par le membre.
         Somme de (amount_to_pay - amount_paid) pour tous les emprunts actifs.
         """
-        total_debt = self.borrowing_set.filter(state=True).aggregate(
+        total_debt = self.borrowing_set.aggregate(
             debt=models.Sum(models.F('amount_to_pay') - models.F('amount_paid'))
         )['debt'] or 0
         return total_debt
@@ -111,7 +111,7 @@ class Member(models.Model):
             return Decimal(0)
 
         total_savings = self.calculate_total_savings()
-        tresorerie = Tresorerie.objects.filter(session=session).first()
+        tresorerie = Tresorerie.objects.filter(session_id=session).first()
 
         if tresorerie and tresorerie.amount > 0:
             return (Decimal(total_savings) / tresorerie.amount) * 100

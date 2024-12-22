@@ -83,3 +83,25 @@ class SubstractTresorerieView(APIView):
         tresorerie.substract(float(amount))
         serializer = TresorerieSerializer(tresorerie)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    
+class AddTresorerieView(APIView):
+    def post(self, request):
+        amount = request.data.get('amount')
+        if not amount:
+            return Response({"error": "Le montant est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Trouver la session active la plus récente
+        session = Session.objects.filter(active=True).order_by('-create_at').first()
+        if not session:
+            return Response({"error": "Aucune session active trouvée."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Retirer le montant de la trésorerie de cette session
+        tresorerie = Tresorerie.objects.filter(session=session).first()
+        if not tresorerie:
+            return Response({"error": "Tresorerie non trouvée pour la session active."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Appliquer le retrait
+        tresorerie.addAmmount(float(amount))
+        serializer = TresorerieSerializer(tresorerie)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -50,7 +50,7 @@ class MemberViewSet(viewsets.ModelViewSet):
         Endpoint pour obtenir le montant total de l'épargne du membre.
         """
         member = self.get_object()
-        total_savings = member.calculate_savings()
+        total_savings = member.calculate_total_savings()
         return Response({"total_savings": total_savings})
 
 

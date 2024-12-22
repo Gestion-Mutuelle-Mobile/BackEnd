@@ -13,6 +13,8 @@ router.register('api/tresorerie', TresorerieViewSet, 'tresorerie')
 urlpatterns = [
     path('fondsocial/substract/', SubstractFondSocialView.as_view(), name='substract_fond_social'),
     path('tresorerie/substract/', SubstractTresorerieView.as_view(), name='substract_tresorerie'),
+    path('tresorerie/Add/', AddTresorerieView.as_view(), name='add_tresorerie'),
+    
 ] + router.urls  # Ajoute les URLs générées par le router
 
 # Ajoute la gestion des formats (suffixes)

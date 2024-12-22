@@ -7,6 +7,13 @@ from .models import Member
 
 class MemberSerializer(serializers.ModelSerializer):
     user = UserSerializer(source='user_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+    has_open_help = serializers.SerializerMethodField()
+    total_savings = serializers.SerializerMethodField()  # Champ pour total_savings
+    has_contributed = serializers.SerializerMethodField()
+    total_debt = serializers.SerializerMethodField()
+    calculate_total_savings= serializers.SerializerMethodField()
+    tresorerie_percentage= serializers.SerializerMethodField()
+
 
     class Meta:
         model = Member
@@ -20,7 +27,7 @@ class MemberSerializer(serializers.ModelSerializer):
         return obj.has_open_help()
 
     def get_total_savings(self, obj):
-        return obj.calculate_savings()
+        return obj.calculate_total_savings()
 
     def get_has_contributed(self, obj):
         """
@@ -29,6 +36,10 @@ class MemberSerializer(serializers.ModelSerializer):
         session = Session.objects.filter(active=True).order_by('-create_at').first()
         if session:
             return ObligatoryContribution.objects.filter(
-                member_id=obj, session=session, contributed=True
+                member_id=obj, session_id=session, contributed=True
             ).exists()
         return False
+    def get_calculate_total_savings(self, obj):
+        return obj.calculate_total_savings()  # Utilise la méthode du modèle
+    def get_tresorerie_percentage(self,obj):
+        return obj.calculate_tresorerie_percentage()
