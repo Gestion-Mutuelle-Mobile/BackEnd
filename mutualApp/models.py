@@ -134,7 +134,7 @@ class Tresorerie(models.Model):
         
         # Calcul des emprunts totaux pour la session
         borrowings = Borrowing.objects.filter(session_id=self.session)
-        self.total_borrowings = sum(borrowing.amount_borrowed for borrowing in borrowings)
+        self.total_borrowings = sum((borrowing.amount_borrowed - borrowing.amount_paid) for borrowing in borrowings)
         
         # Mise à jour du montant
         self.amount = self.total_savings - self.total_borrowings
@@ -146,7 +146,7 @@ class Tresorerie(models.Model):
         """
         Vérifie si la trésorerie peut supporter un emprunt
         """
-        return amount <= (self.amount * 0.8)  # Limite à 80% de la trésorerie
+        return amount <= (self.amount * 0.9)  # Limite à 90% de la trésorerie
     
     def log_transaction(self, transaction_type, amount):
         """
