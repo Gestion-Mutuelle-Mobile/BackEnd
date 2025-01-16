@@ -42,7 +42,7 @@ class HelpSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Help
-        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id','member']
+        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id','member','id','state']
 
     def get_collected_amount(self, obj):
         return obj.calculate_help_amount()
