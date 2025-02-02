@@ -9,6 +9,7 @@ router.register('api/obligatory_contributions',Obligatory_ContributionViewSet,'o
 router.register('api/borrowings',BorrowingViewSet,'borrowings')
 router.register('api/savings', EpargneViewSet, 'savings')
 router.register('api/refunds',RefundViewSet,'refunds')
+router.register('api/help_type',HelpTypeViewSet, 'help_type')
 
 urlpatterns = [
     path('help/close/<int:pk>/', CloseHelpView.as_view(), name='close_help')

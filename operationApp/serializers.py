@@ -36,13 +36,16 @@ class ContributionSerializer(serializers.ModelSerializer):
             representation['amount'] = instance.amount
 
         return representation
-
+class HelpTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HelpType
+        fields = '__all__'
 class HelpSerializer(serializers.ModelSerializer):
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
-
+    helptype=HelpTypeSerializer(source='help_type_id', read_only=True) # Sérialiseur pour inclure l'util
     class Meta:
         model = Help
-        fields = ['limit_date', 'amount_expected', 'comments', 'member_id','administrator_id','member','id','state']
+        fields = [ 'help_type_id','amount_expected', 'member_id','administrator_id','member','id','state','helptype']
 
     def get_collected_amount(self, obj):
         return obj.calculate_help_amount()
@@ -72,6 +75,7 @@ class BorrowingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Borrowing
         fields = ['amount_borrowed','member_id','administrator_id','session_id','member','session','administrator','amount_paid','amount_to_pay','id', 'payment_date_line', 'create_at']
+
         extra_kwargs = {
             'amount_paid': {'read_only': True},
             'amount_to_pay': {'read_only': True}
@@ -128,6 +132,8 @@ class EpargneSerializer(serializers.ModelSerializer):
 
     def get_fond_social_percentage(self, obj):
         return obj.calculate_tresorerie_percentage()
+
+
 
 class RefundSerializer(serializers.ModelSerializer):
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
