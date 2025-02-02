@@ -24,7 +24,7 @@ class MemberSerializer(serializers.ModelSerializer):
         return obj.calculate_debt()
 
     def get_has_open_help(self, obj):
-        return obj.has_open_help()
+        return False
 
     def get_total_savings(self, obj):
         return obj.calculate_total_savings()
@@ -39,7 +39,9 @@ class MemberSerializer(serializers.ModelSerializer):
                 member_id=obj, session_id=session, contributed=True
             ).exists()
         return False
-    def get_calculate_total_savings(self, obj):
-        return obj.calculate_total_savings()  # Utilise la méthode du modèle
+    def get_calculate_total_savings(self,obj):
+        return obj.get_current_savings()
+    def get_get_current_savings(self, obj):
+        return obj.get_current_savings()  # Utilise la méthode du modèle
     def get_tresorerie_percentage(self,obj):
         return obj.calculate_tresorerie_percentage()

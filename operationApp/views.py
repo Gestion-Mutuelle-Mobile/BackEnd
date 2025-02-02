@@ -1,5 +1,7 @@
 from rest_framework.views import APIView
-
+from django_filters import FilterSet
+from django.db.models import JSONField
+from django_filters.filters import CharFilter
 from .serializers import *
 from rest_framework import viewsets, permissions
 from rest_framework.response import Response
@@ -119,7 +121,12 @@ class BorrowingFilterSet(FilterSet):
         model = Borrowing  # Remplacez par le nom de votre modèle
         # OU
         fields = '__all__' # Incluez uniquement les champs désirés
-        exclude = ['loan_distribution']  # Excluez le champ JSON
+        # Ajout des overrides pour JSONField
+        filter_overrides = {
+            JSONField: {
+                'filter_class': CharFilter,  # Permet de filtrer comme une chaîne de caractères
+            },
+        }
 
 
 class BorrowingViewSet(viewsets.ModelViewSet):
@@ -136,6 +143,13 @@ class EpargneViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = '__all__' # Autorise le filtrage par tout
 
+
+class HelpTypeViewSet(viewsets.ModelViewSet):
+    queryset = HelpType.objects.all()
+    permission_classes = [permissions.AllowAny]
+    serializer_class = HelpTypeSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = '__all__' # Autorise le filtrage par tout
 class RefundViewSet(viewsets.ModelViewSet):
     queryset = Refund.objects.all()
     permission_classes = [permissions.AllowAny]
@@ -146,3 +160,4 @@ class RefundViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         refund = serializer.save()
         return Response({'message': 'Remboursement enregistré et distribué aux épargnes.'}, status=status.HTTP_201_CREATED)
+    
