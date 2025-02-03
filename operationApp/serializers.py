@@ -57,73 +57,86 @@ class Obligatory_ContributionSerializer(serializers.ModelSerializer):
         model = ObligatoryContribution
         fields = '__all__'
 
+
 class BorrowingSerializer(serializers.ModelSerializer):
-   
     administrator = serializers.PrimaryKeyRelatedField(
         queryset=Administrator.objects.all(), 
-        source='administrator_id'
+        source='administrator_id',
+        required=True
     )
     session = serializers.PrimaryKeyRelatedField(
         queryset=Session.objects.all(), 
-        source='session_id'
+        source='session_id',
+        required=True
     )
     
-    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
-    
-
+    member = MemberSerializer(source='member_id', read_only=True)
 
     class Meta:
         model = Borrowing
-        fields = ['amount_borrowed','member_id','administrator_id','session_id','member','session','administrator','amount_paid','amount_to_pay','id', 'payment_date_line', 'create_at']
-
+        fields = [
+            'id',
+            'amount_borrowed',
+            'member_id',
+            'administrator_id',
+            'session_id',
+            'exercise_id',
+            'member',
+            'session',
+            'administrator',
+            'amount_paid',
+            'amount_to_pay',
+            'payment_date_line',
+            'create_at',
+            'state',
+            'late',
+            'interest_rate',
+            'interest_distribution'
+        ]
         extra_kwargs = {
             'amount_paid': {'read_only': True},
-            'amount_to_pay': {'read_only': True}
-            , 'payment_date_line':{'read_only': True}, 'create_at':{'read_only': True}
+            'amount_to_pay': {'read_only': True},
+            'payment_date_line': {'read_only': True},
+            'member': {'read_only': True},
+            'create_at': {'read_only': True},
+            'state': {'read_only': True},
+            'late': {'read_only': True},
+            'interest_distribution': {'read_only': True},
+            'member_id': {'required': True},
+            'administrator_id': {'required': True},
+            'session_id': {'required': True},
+            'exercise_id': {'required': True},
+            'amount_borrowed': {'required': True}
         }
-        
-    def to_representation(self, instance):
-        """
-        Modifie la représentation pour inclure amount_paid et amount_to_pay pour les GET.
-        """
-        representation = super().to_representation(instance)
-        
-        return representation
-    
-    
 
-    def to_internal_value(self, data):
-        """
-        Modifie les données internes pour exclure amount_paid et amount_to_pay pour les POST/PUT/PATCH.
-        """
-        internal_value = super().to_internal_value(data)
-        # Supprime amount_paid et amount_to_pay des données pour les opérations d'écriture
-        internal_value.pop('amount_paid', None)
-        internal_value.pop('amount_to_pay', None)
-        internal_value.pop('payment_date_line', None)
-        internal_value.pop('create_at', None)
-        
-        internal_value.pop('id', None)
-        return internal_value
-    
+    def validate_amount_borrowed(self, value):
+        """Validation du montant emprunté"""
+        if value <= 0:
+            raise serializers.ValidationError("Le montant emprunté doit être positif")
+        return value
+
     def create(self, validated_data):
-        member = serializers.PrimaryKeyRelatedField(
-        queryset=Member.objects.all(), 
-        source='member_id',
-        
-        )
-        # Explicitly handle related object creation
-        member = validated_data.pop('member_id')
-        administrator = validated_data.pop('administrator_id')
-        session = validated_data.pop('session_id')
+        try:
+            # On initialise les champs obligatoires qui ne sont pas fournis
+            validated_data['payment_date_line'] = timezone.now() + timedelta(days=30)
+            
+            # Calcul du montant à payer (principal + intérêts)
+            amount_borrowed = Decimal(str(validated_data['amount_borrowed']))
+            interest_rate = Decimal('3.00')  # Taux par défaut de 3%
+            interest_amount = (amount_borrowed * interest_rate) / Decimal('100')
+            validated_data['amount_to_pay'] = amount_borrowed + interest_amount
+            
+            # Création de l'emprunt
+            borrowing = Borrowing.objects.create(**validated_data)
+            return borrowing
+            
+        except Exception as e:
+            raise serializers.ValidationError(f"REPONSE DU SERIALIZER : {str(e)}")
 
-        borrowing = Borrowing.objects.create(
-            member_id=member,
-            administrator_id=administrator,
-            session_id=session,
-            **validated_data
-        )
-        return borrowing
+    def to_representation(self, instance):
+        """Pour les GET, retourne la représentation complète"""
+        representation = super().to_representation(instance)
+        return representation
 
 class EpargneSerializer(serializers.ModelSerializer):
     class Meta:

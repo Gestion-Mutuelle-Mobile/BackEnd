@@ -106,7 +106,7 @@ class FondSocial(models.Model):
 
     def add_amount(self, amount):
         """Ajoute un montant au fond social"""
-        self.amount += amount
+        self.amount += decimal.Decimal(amount) 
         self.save()
 
     def subtract_amount(self, amount):
