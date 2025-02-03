@@ -12,6 +12,7 @@ from decimal import Decimal
 from django.utils.timezone import now
 
 
+
 class Operation(models.Model):
     administrator_id = models.ForeignKey('administrators.Administrator', on_delete=models.SET_NULL, null=True,related_name='operations_from_operationApp')
     create_at = models.DateTimeField(auto_now=True)
@@ -23,19 +24,21 @@ class Operation(models.Model):
         Reedéfinit la méthode save pour attribuer automatiquement la dernière session active.
         Si aucune session active n'est trouvée, l'opération n'est pas sauvegardée.
         """
-        from mutualApp.models import Session
+        from mutualApp.models import Session,Exercise
 
         # Recherche la dernière session active
+       # Recherche la dernière session active
         active_session = Session.objects.filter(active=True).order_by('-create_at').first()
-
+        active_exercice= Exercise.objects.filter(id=active_session.exercise_id).first()
         if active_session:
             self.session_id = active_session  # Assigne la session active
-            self.exercise_id = active_session.exercise  # Assigne l'exercice de la session
-            super().save(*args, **kwargs)    # Appelle la méthode save parente
+            
+            self.exercise_id = active_exercice # Assigne l'exercice de la session
         else:
             # Message si aucune session active n'est trouvée
             print("Aucune session active pour le moment. L'opération ne peut pas être enregistrée.")
-
+         # IMPORTANT: Toujours appeler la méthode save du parent
+        super().save(*args, **kwargs)
 
 # Create your models here.
 class Contribution(models.Model):
@@ -53,13 +56,15 @@ class Contribution(models.Model):
         Si aucune session active n'est trouvée, l'opération n'est pas sauvegardée.
         """
         from mutualApp.models import Session
+        from mutualApp.models import Exercise
 
         # Recherche la dernière session active
         active_session = Session.objects.filter(active=True).order_by('-create_at').first()
-
+        active_exercice= Exercise.objects.filter(id=active_session.exercise_id).first()
         if active_session:
             self.session_id = active_session  # Assigne la session active
-            self.exercise_id = active_session.exercise_id  # Assigne l'exercice de la session
+            
+            self.exercise_id = active_exercice # Assigne l'exercice de la session
 
             super().save(*args, **kwargs)    # Appelle la méthode save parente
         else:
@@ -81,8 +86,12 @@ class Help(Operation):
     def __str__(self):
         return f"Aide au membre {self.member_id.username}"
     def save(self, *args, **kwargs):
-        self.amount_expected=self.help_type_id.amount
-        super().save(*args, **kwargs)    # Appelle la méthode save parente
+        if not self.pk:
+            Ht=HelpType.objects.filter(id=self.help_type_id.id).first()
+            self.amount_expected=Ht.amount
+            super().save(*args, **kwargs)    # Appelle la méthode save parente
+        else:
+            super().save(*args, **kwargs)
     def calculate_help_amount(self):
         from django.db.models import Sum
 
@@ -130,17 +139,17 @@ class Borrowing(Operation):
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     amount_to_pay = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date_line = models.DateTimeField()
-    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE,related_name='borrowings_from_operationApp')
+    member_id = models.ForeignKey('members.Member', on_delete=models.CASCADE, related_name='borrowings_from_operationApp')
     state = models.BooleanField(default=False)
     late = models.BooleanField(default=False)
-    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=3.00)  # Taux fixé à 3%
-    interest_distribution = models.JSONField(default=dict)  # Stockage de la distribution des intérêts
+    interest_rate = models.DecimalField(max_digits=5, decimal_places=2, default=3.00)
+    interest_distribution = models.JSONField(default=dict)
 
     @transaction.atomic
     def save(self, *args, **kwargs):
-        self.check_and_update_late_status()
-
         if not self.pk:  # Nouveau prêt
+            # Ne pas appeler check_and_update_late_status() ici car payment_date_line n'est pas encore défini
+            
             # Calcul du montant des intérêts (3% du montant emprunté)
             interest_amount = (self.amount_borrowed * self.interest_rate) / 100
             self.amount_to_pay = self.amount_borrowed + interest_amount
@@ -153,10 +162,18 @@ class Borrowing(Operation):
 
             # Mise à jour de la trésorerie
             tresorerie = Tresorerie.objects.get(exercise=self.exercise_id)
-            tresorerie.substract(self.amount_borrowed)
+            tresorerie.subtract_amount(self.amount_borrowed)
             tresorerie.save()
+        else:
+            # Vérifier le statut de retard uniquement pour les emprunts existants
+            self.check_and_update_late_status()
 
         super().save(*args, **kwargs)
+
+    def check_and_update_late_status(self):
+        """Vérifie si la date limite de paiement est passée"""
+        if now() > self.payment_date_line and not self.state:
+            self.late = True
 
     def distribute_interest(self, total_interest):
         """Distribue les intérêts aux membres proportionnellement à leurs épargnes"""
@@ -174,7 +191,7 @@ class Borrowing(Operation):
                 interest_share = (epargne.amount / total_savings) * total_interest
 
                 # Mise à jour de l'intérêt de l'épargne
-                epargne.interest += float(interest_share)
+                epargne.interest += Decimal(interest_share)
                 epargne.save()
 
                 # Mise à jour de l'intérêt total du membre
@@ -186,14 +203,6 @@ class Borrowing(Operation):
                 distribution[str(epargne.member_id.id)] = float(interest_share)
 
         self.interest_distribution = distribution
-
-    def check_and_update_late_status(self):
-        """
-        Vérifie si la date limite de paiement est passée et met à jour l'état `state`.
-        """
-        if now() > self.payment_date_line and not self.state:
-            self.late = True  # Mettre à jour le statut à "en retard"
-            self.save()  # Sauvegarder la mise à jour
 
 
 # model de l'epargne
@@ -230,7 +239,8 @@ class Refund(models.Model):
     @transaction.atomic
     def save(self, *args, **kwargs):
         if not self.pk:  # Nouveau remboursement
-            borrowing = self.borrowing_id
+            borrowing=Borrowing.objects.filter(id=self.borrowing_id.id).first()
+            
             borrowing.check_and_update_late_status()
 
             # Mise à jour du montant remboursé de l'emprunt
