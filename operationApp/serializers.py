@@ -3,16 +3,25 @@ from rest_framework import serializers
 from members.serializers import MemberSerializer
 from .models import *
 
-class PersonalContributionSerializer(serializers.ModelSerializer):
-    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
 
+class HelpTypeSerializer(serializers.ModelSerializer):
     class Meta:
-        model = PersonalContribution
+        model = HelpType
         fields = '__all__'
-        
+class HelpSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+    helptype=HelpTypeSerializer(source='help_type_id', read_only=True) # Sérialiseur pour inclure l'util
+    class Meta:
+        model = Help
+        fields = [ 'help_type_id','amount_expected', 'member_id','administrator_id','member','id','state','helptype']
+
+    def get_collected_amount(self, obj):
+        return obj.calculate_help_amount()       
 
 class ContributionSerializer(serializers.ModelSerializer):
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure les infos du membre
+    help = HelpSerializer(source='help_id', read_only=True)  # Sérialiseur pour inclure l'aide
+
 
     class Meta:
         model = Contribution
@@ -36,19 +45,16 @@ class ContributionSerializer(serializers.ModelSerializer):
             representation['amount'] = instance.amount
 
         return representation
-class HelpTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HelpType
-        fields = '__all__'
-class HelpSerializer(serializers.ModelSerializer):
-    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
-    helptype=HelpTypeSerializer(source='help_type_id', read_only=True) # Sérialiseur pour inclure l'util
-    class Meta:
-        model = Help
-        fields = [ 'help_type_id','amount_expected', 'member_id','administrator_id','member','id','state','helptype']
 
-    def get_collected_amount(self, obj):
-        return obj.calculate_help_amount()
+
+class PersonalContributionSerializer(serializers.ModelSerializer):
+    member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
+    help = HelpSerializer(source='help_id', read_only=True)  # Sérialiseur pour inclure l'aide
+
+
+    class Meta:
+        model = PersonalContribution
+        fields = '__all__'
 
 class Obligatory_ContributionSerializer(serializers.ModelSerializer):
     member = MemberSerializer(source='member_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur

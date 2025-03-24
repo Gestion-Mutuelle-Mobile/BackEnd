@@ -72,6 +72,22 @@ class ContributionViewSet(viewsets.ModelViewSet):
         # Sérialisation des contributions combinées
         serializer = self.get_serializer(all_contributions, many=True)
         return Response(serializer.data)
+    @action(detail=False, methods=['get'])
+    def all_contributions_member(self, request):
+        """
+        Endpoint pour retourner les contributions obligatoires et personnelles combinées.
+        """
+        member_id = request.query_params.get('member_id')
+        
+        obligatory_contributions = ObligatoryContribution.objects.filter(member_id=member_id)
+        personal_contributions = PersonalContribution.objects.filter(member_id=member_id)
+
+        # Combine les deux ensembles
+        all_contributions = list(obligatory_contributions) + list(personal_contributions)
+
+        # Sérialisation des contributions combinées
+        serializer = self.get_serializer(all_contributions, many=True)
+        return Response(serializer.data)
 
 
 
