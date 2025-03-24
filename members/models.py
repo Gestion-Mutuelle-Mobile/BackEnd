@@ -35,7 +35,7 @@ class Member(models.Model):
         if status==False:
             self.has_contribued_for_session=status
         else:
-            self.has_contribued_for_session=(not self.has_contribued_for_session)
+            self.has_contribued_for_session=True
         self.save()
 
     def get_current_savings(self):

@@ -65,7 +65,7 @@ class Contribution(models.Model):
             self.session_id = active_session  # Assigne la session active
             
             self.exercise_id = active_exercice # Assigne l'exercice de la session
-
+            print('appel de super')
             super().save(*args, **kwargs)    # Appelle la méthode save parente
         else:
             # Message si aucune session active n'est trouvée
@@ -115,12 +115,13 @@ class HelpType(models.Model):
 
 
 class ObligatoryContribution(Contribution):
-    contributed = models.BooleanField(default=False)
+    contributed = models.BooleanField(default=True)
     amount = models.FloatField(default=10000)
     def save(self, *args, **kwargs):
         fonds_social=FondSocial.objects.get(exercise=self.exercise_id)
         fonds_social.add_amount(self.amount)
         self.member_id.update_contrib_status()
+        print('*** appel de save contribution obli ****')
 
         super().save(*args, **kwargs)    # Appelle la méthode
     def __str__(self):
