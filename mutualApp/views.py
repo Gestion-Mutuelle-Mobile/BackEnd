@@ -30,6 +30,7 @@ class FondSocialViewSet(viewsets.ModelViewSet):
     serializer_class = FondSocialSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = '__all__' # Autorise le filtrage par tout
+    
 
 
 # ViewSet pour Tresorerie
