@@ -1,3 +1,5 @@
+from rest_framework.decorators import action
+
 from mutualApp.models import Exercise
 from rest_framework import viewsets, permissions
 from mutualApp.serializers import *
@@ -14,6 +16,15 @@ class ExerciseViewSet(viewsets.ModelViewSet):
     serializer_class = ExerciseSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = '__all__' # Autorise le filtrage par tout
+
+    @action(detail=True, methods=['post'])
+    def close_exercise(self, request, pk=None):
+        """
+        Endpoint pour fermer un exercice , décaisser et en demarer un nouveau.
+        """
+        exercice_instance = self.get_object()
+        reponse = exercice_instance.close_exercise_simulated()
+        return Response({"ok": reponse})
 
 class SessionViewSet(viewsets.ModelViewSet):
     queryset = Session.objects.all()

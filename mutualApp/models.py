@@ -28,29 +28,42 @@ class Exercise(models.Model):
     def close_exercise(self):
         """Ferme l'exercice et transfère les fonds vers un nouvel exercice"""
         if self.active:
-            self.active = False
-            self.end_date = timezone.now()
-            self.save()
+            try:
+                self.active = False
+                self.end_date = timezone.now()
+                self.save()
 
-            # Crée un nouvel exercice
-            new_exercise = Exercise.objects.create(
-                administrator_id=self.administrator_id,
-                active=True
-            )
+                # Crée un nouvel exercice
+                new_exercise = Exercise.objects.create(
+                    administrator_id=self.administrator_id,
+                    active=True
+                )
 
-            # Transfère le fond social
-            old_fond = FondSocial.objects.get(exercise=self)
-            FondSocial.objects.create(
-                exercise=new_exercise,
-                amount=old_fond.amount
-            )
+                # Transfère le fond social
+                old_fond = FondSocial.objects.get(exercise=self)
+                FondSocial.objects.create(
+                    exercise=new_exercise,
+                    amount=old_fond.amount
+                )
 
-            # Transfère la trésorerie
-            old_treso = Tresorerie.objects.get(exercise=self)
-            Tresorerie.objects.create(
-                exercise=new_exercise,
-                amount=old_treso.amount
-            )
+                # Transfère la trésorerie
+                old_treso = Tresorerie.objects.get(exercise=self)
+                Tresorerie.objects.create(
+                    exercise=new_exercise,
+                    amount=0
+                )
+                return True
+            except Exception as e:
+                print(f"Erreur lors de la fermeture de l'exercice : {e}")
+                return False
+        else:
+            print("Exercice inactif")
+            return False
+
+    def close_exercise_simulated(self):
+        """ SIMULATION : Ferme l'exercice et transfère les fonds vers un nouvel exercice"""
+        return True
+
 
     def __str__(self):
         return f"Exercice {self.id} ({self.create_at.year})"

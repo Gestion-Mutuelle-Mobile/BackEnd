@@ -34,6 +34,8 @@ class Member(models.Model):
     def update_contrib_status(self,status=True):
         if status==False:
             self.has_contribued_for_session=status
+        elif status==True:
+            self.has_contribued_for_session=status
         else:
             self.has_contribued_for_session=(not self.has_contribued_for_session)
         self.save()
