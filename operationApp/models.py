@@ -120,7 +120,7 @@ class ObligatoryContribution(Contribution):
     def save(self, *args, **kwargs):
         fonds_social=FondSocial.objects.get(exercise=self.exercise_id)
         fonds_social.add_amount(self.amount)
-        self.member_id.update_contrib_status()
+        self.member_id.update_contrib_status(status=True)
 
         super().save(*args, **kwargs)    # Appelle la méthode
     def __str__(self):
