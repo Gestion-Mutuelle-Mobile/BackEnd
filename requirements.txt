@@ -24,6 +24,8 @@ python-dateutil
 requests
 s3transfer
 setuptools
+django-filter
+whitenoise  
 shortuuid
 six
 sqlparse
