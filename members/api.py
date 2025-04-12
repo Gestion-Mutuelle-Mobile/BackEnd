@@ -16,6 +16,10 @@ from .models import Member
 from .serializers import MemberSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
+import openpyxl
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 
 class MemberViewSet(viewsets.ModelViewSet):
     queryset = Member.objects.all()
@@ -177,3 +181,91 @@ class RegisterUserView(APIView):
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
+
+
+class ImportMembersFromExcel(APIView):
+    def post(self, request):
+        # Vérifier si un fichier a été envoyé
+        if 'file' not in request.FILES:
+            return Response({"error": "Aucun fichier Excel fourni"},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        file = request.FILES['membres_format_import.xlsx']
+
+        try:
+            wb = openpyxl.load_workbook(file)
+            sheet = wb.active
+
+            created_members = []
+            skipped_members = []
+            default_password = "0000"  # Mot de passe par défaut
+            hashed_password = make_password(default_password)  # Hachage sécurisé
+
+            for row in sheet.iter_rows(min_row=2, values_only=True):
+                username = row[0]
+                first_name = row[1]
+                name = row[2]
+                email = row[3]
+                user_type = row[5] if len(row) > 5 else "member"
+
+                # Validation de l'email
+                if not email or "@" not in email:
+                    skipped_members.append({
+                        "username": username,
+                        "reason": "Email invalide"
+                    })
+                    continue
+
+                if User.objects.filter(email=email).exists():
+                    skipped_members.append({
+                        "username": username,
+                        "email": email,
+                        "reason": "Email déjà existant"
+                    })
+                    continue
+
+                # Création de l'utilisateur avec mot de passe haché
+                user = User(
+                    username=username,
+                    first_name=first_name,
+                    name=name,
+                    email=email,
+                    password=hashed_password,  # Utilisation du mot de passe haché
+                    type=user_type,
+                    create_at=timezone.now(),
+                    sex="M",  # Valeur par défaut
+                    tel="",
+                    address=""
+                )
+                user.save()
+
+                # Création du membre associé
+                member = Member.objects.create(
+                    user_id=user,
+                    username=username,
+                    administrator_id=Administrator.objects.first(),
+                    active=True,
+                    inscription="10000.00"
+                )
+
+                created_members.append({
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email
+                })
+
+            return Response({
+                "status": "success",
+                "created_count": len(created_members),
+                "skipped_count": len(skipped_members),
+                "created_members": created_members,
+                "skipped_members": skipped_members,
+                "note": "Tous les mots de passe ont été définis comme '0000' (haché sécurisé)"
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response({
+                "status": "error",
+                "message": "Erreur lors de l'importation",
+                "detail": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)
