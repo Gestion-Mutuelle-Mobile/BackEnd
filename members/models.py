@@ -8,6 +8,11 @@ from datetime import timedelta
 from django.utils import timezone
 
 
+class DeviceToken(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    token = models.TextField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
 
 class Member(models.Model):
