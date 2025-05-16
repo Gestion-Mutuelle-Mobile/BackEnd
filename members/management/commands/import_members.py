@@ -4,7 +4,6 @@ from django.contrib.auth.hashers import make_password
 from django.utils import timezone
 from members.models import User, Member, Administrator
 
-
 class Command(BaseCommand):
     help = 'Import members from Excel file with default password 0000'
 

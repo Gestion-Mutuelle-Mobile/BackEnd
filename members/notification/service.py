@@ -2,8 +2,8 @@
 import os
 import firebase_admin
 from firebase_admin import credentials, messaging
-from members.models import Member  # ajuste ce chemin à ta structure réelle
-from yourapp.models import DeviceToken  # remplace `yourapp` par le vrai nom
+from members.models import User, Member, Administrator # ajuste ce chemin à ta structure réelle
+from members.models import DeviceToken  # remplace `yourapp` par le vrai nom
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 cred_path = os.path.join(BASE_DIR, "firebase-adminsdk.json")
