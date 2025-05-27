@@ -6,7 +6,7 @@ from members.models import User, Member, Administrator # ajuste ce chemin à ta 
 from members.models import DeviceToken  # remplace `yourapp` par le vrai nom
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-cred_path = os.path.join(BASE_DIR, "firebase-adminsdk.json")
+cred_path = os.path.join(BASE_DIR, "google-services.json")
 
 # Initialisation Firebase une seule fois
 if not firebase_admin._apps:
