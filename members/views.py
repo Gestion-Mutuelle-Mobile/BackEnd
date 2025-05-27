@@ -6,7 +6,6 @@ from rest_framework.response import Response
 from .models import DeviceToken
 
 @api_view(['POST'])
-@login_required
 def register_token(request):
     token = request.data.get('token')
     if token:
