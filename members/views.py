@@ -10,7 +10,8 @@ def register_token(request):
     try:
         token = request.data.get('token')
         user_id = request.data.get('user_id')
-
+        print("le token est :",token)
+        print("l'user a pour ID:",user_id)
         if not token or not user_id:
             return Response({"error": "token et user_id requis"}, status=400)
 
