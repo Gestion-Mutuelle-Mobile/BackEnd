@@ -1,14 +1,26 @@
-
-from django.contrib.auth.decorators import login_required
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User  # ou ton modèle User personnalisé
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import DeviceToken
 
 @api_view(['POST'])
 def register_token(request):
-    token = request.data.get('token')
-    if token:
-        DeviceToken.objects.update_or_create(user=request.user, defaults={'token': token})
+    try:
+        token = request.data.get('token')
+        user_id = request.data.get('user_id')
+
+        if not token or not user_id:
+            return Response({"error": "token et user_id requis"}, status=400)
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "Utilisateur non trouvé"}, status=404)
+
+        DeviceToken.objects.update_or_create(user=user, defaults={'token': token})
         return Response({"status": "ok"})
-    return Response({"status": "error"}, status=400)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response({"error": str(e)}, status=500)
