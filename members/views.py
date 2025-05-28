@@ -2,6 +2,8 @@ from django.contrib.auth.models import User  # ou ton modèle User personnalisé
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import DeviceToken
+from members.models import Member
+from users.models import User
 
 @api_view(['POST'])
 def register_token(request):
@@ -13,7 +15,7 @@ def register_token(request):
             return Response({"error": "token et user_id requis"}, status=400)
 
         try:
-            user = User.objects.get(pk=user_id)
+            user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({"error": "Utilisateur non trouvé"}, status=404)
 
