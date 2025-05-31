@@ -2,7 +2,7 @@
 import os
 import firebase_admin
 from firebase_admin import credentials, messaging
-from members.models import User, Member, Administrator # ajuste ce chemin à ta structure réelle
+from members.models import User, Member, Administrator, Notification # ajuste ce chemin à ta structure réelle
 from members.models import DeviceToken  # remplace `yourapp` par le vrai nom
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # ← ne pas aller trop haut
@@ -24,14 +24,23 @@ def send_notification_to_token(token, title, body):
     except Exception as e:
         print(f"Erreur avec {token[:10]}...: {e}")
 
+
 def notify_non_contributors():
     members = Member.objects.filter(has_contribued_for_session=False)
+    print("membres sont :", members)
 
     for member in members:
         device_tokens = DeviceToken.objects.filter(user=member.user_id)
         for token in device_tokens:
-            send_notification_to_token(
-                token.token,
-                title="Contribution manquante",
-                body=f"Bonjour {member.username}, vous n'avez pas encore contribué à la session."
+            title = "Contribution manquante"
+            body = f"Salut {member.username}, vous n'avez pas encore payé votre contribution de la session."
+
+            print("le token est :", token.token)
+            send_notification_to_token(token.token, title=title, body=body)
+
+            # Enregistrement de la notification
+            Notification.objects.create(
+                user=token.user,
+                title=title,
+                body=body
             )

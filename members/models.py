@@ -13,7 +13,15 @@ class DeviceToken(models.Model):
     token = models.TextField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+class Notification(models.Model):
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=255)
+    body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    seen = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"Notification to {self.user.name}: {self.title}"
 
 class Member(models.Model):
     user_id = models.ForeignKey('users.User', on_delete=models.CASCADE)

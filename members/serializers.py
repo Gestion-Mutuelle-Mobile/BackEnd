@@ -4,6 +4,12 @@ from mutualApp.models import Session
 from operationApp.models import ObligatoryContribution
 from users.serializers import UserSerializer
 from .models import Member
+from .models import Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'body', 'sent_at', 'seen']
 
 class MemberSerializer(serializers.ModelSerializer):
     user = UserSerializer(source='user_id', read_only=True)  # Sérialiseur pour inclure l'utilisateur
